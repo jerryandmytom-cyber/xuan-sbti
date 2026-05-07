@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🧬 SBTI 2026 疯狂指数个性测试</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- 启动闪屏 -->
+    <div id="splash" class="splash">
+        <div class="splash-content">
+            <div class="splash-icon">🧬</div>
+            <div class="splash-title">SBTI 2026</div>
+            <div class="splash-subtitle">疯狂指数个性测试</div>
+            <div class="splash-loader">
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+                <div class="loader-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用 -->
+    <div id="app" class="app hidden">
+
+        <!-- 首页 -->
+        <div id="home" class="page visible">
+            <div class="header-icon">🧬</div>
+            <h1 class="title">SBTI 2026<br>疯狂指数个性测试</h1>
+            <p class="subtitle">6道题 · 随机抽取 · AI智能分析</p>
+
+            <div class="features">
+                <div class="feature">
+                    <span class="feature-icon">📝</span>
+                    <span>随机6题防背答案</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🤖</span>
+                    <span>AI动态分析结果</span>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🎨</span>
+                    <span>专属梗图结果卡</span>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="start-btn">开始测试</button>
+
+            <div class="crosspromo">
+                <p>试试其他玄学服务</p>
+                <div class="promo-links">
+                    <a href="https://t.me/EasternMysteryBot?start=bazi" class="promo-link">🔮 八字算命</a>
+                    <a href="https://t.me/EasternMysteryBot?start=yinyuan" class="promo-link">💕 姻缘测算</a>
+                    <a href="https://t.me/EasternMysteryBot?start=ziwei" class="promo-link">✨ 紫微斗数</a>
+                    <a href="https://t.me/EasternMysteryBot?start=jishi" class="promo-link">🕐 吉时查询</a>
+                    <a href="https://t.me/EasternMysteryBot?start=qiming" class="promo-link">🍼 取名能手</a>
+                    <a href="https://t.me/EasternMysteryBot?start=today" class="promo-link">🌤️ 今日运势</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题目页 -->
+        <div id="quiz" class="page">
+            <div class="quiz-header">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="quiz-meta">
+                    <span id="step-label">第 1/6 题</span>
+                    <span id="ai-badge" class="hidden">🤖 AI动态题</span>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <p class="question-text" id="question-text"></p>
+            </div>
+
+            <div class="options" id="options"></div>
+        </div>
+
+        <!-- 结果页 -->
+        <div id="result" class="page">
+            <div class="result-card">
+                <div class="result-header">
+                    <div class="result-icon" id="result-icon">🧬</div>
+                    <div class="result-badge" id="result-badge-cn">加载中...</div>
+                    <div class="result-badge-en" id="result-badge-en">Loading...</div>
+                </div>
+
+                <div class="result-user" id="result-user">你的专属档案</div>
+
+                <div class="radar-section">
+                    <div class="radar-title">📊 六维雷达数据</div>
+                    <div id="score-bars" class="score-bars"></div>
+                </div>
+
+                <div class="diagnosis-section">
+                    <div class="diagnosis-title">🧠 AI 诊断报告</div>
+                    <p class="diagnosis-text" id="diagnosis-text"></p>
+                </div>
+
+                <button class="btn-primary" id="share-btn">📤 分享结果</button>
+                <button class="btn-secondary" id="retest-btn" style="width:100%; margin-top:10px;">🔄 重新测试</button>
+
+                <div class="crosspromo">
+                    <p>🎯 你可能还会喜欢</p>
+                    <div class="promo-links">
+                        <a href="https://t.me/EasternMysteryBot?start=bazi" class="promo-link">🔮 八字算命</a>
+                        <a href="https://t.me/EasternMysteryBot?start=yinyuan" class="promo-link">💕 姻缘测算</a>
+                        <a href="https://t.me/EasternMysteryBot?start=ziwei" class="promo-link">✨ 紫微斗数</a>
+                        <a href="https://t.me/EasternMysteryBot?start=today" class="promo-link">🌤️ 今日运势</a>
+                        <a href="https://t.me/EasternMysteryBot?start=jishi" class="promo-link">🕐 吉时查询</a>
+                        <a href="https://t.me/EasternMysteryBot?start=qiming" class="promo-link">🍼 取名能手</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="questions.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
