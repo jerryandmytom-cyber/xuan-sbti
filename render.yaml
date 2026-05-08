@@ -1,0 +1,15 @@
+{
+  "name": "玄VIP Telegram Mini App",
+  "description": "SBTI性格测试与玄学解读",
+  "repository": "https://github.com/myworld998866/xuanvip-miniapp",
+  "buildCommand": "npm install",
+  "startCommand": "npm start",
+  "envVars": {
+    "NODE_ENV": {
+      "value": "production"
+    }
+  },
+  "healthCheckPath": "/",
+  "region": "singapore",
+  "plan": "free"
+}

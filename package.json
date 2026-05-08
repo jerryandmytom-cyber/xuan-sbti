@@ -1,0 +1,13 @@
+{
+  "name": "telegram-sbti",
+  "version": "1.0.0",
+  "description": "🔮 SBTI 性格测试 Telegram Mini App - AI智能分析你的性格密码",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

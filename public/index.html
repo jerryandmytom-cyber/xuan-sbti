@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🔮 SBTI 性格测试</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>🔮 SBTI性格测试</h1>
+            <p class="subtitle">AI智能分析 · 解锁你的性格密码</p>
+        </header>
+
+        <main id="app-main">
+            <!-- 欢迎页面 -->
+            <section id="welcome-screen" class="screen active">
+                <div class="welcome-box">
+                    <div class="icon">🧠</div>
+                    <h2>探索你的性格密码</h2>
+                    <p>通过28道精选题目，AI将分析你的性格特征、优势与潜在发展方向</p>
+                    <div class="test-info">
+                        <div class="info-item">
+                            <span class="icon">⏱️</span>
+                            <span>约5分钟</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="icon">📊</span>
+                            <span>28道题</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="icon">🎯</span>
+                            <span>16种人格</span>
+                        </div>
+                    </div>
+                    <button id="start-btn" class="start-btn">开始测试 🚀</button>
+                </div>
+            </section>
+
+            <!-- 测试页面 -->
+            <section id="test-screen" class="screen">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="question-counter">
+                    <span id="current-q">1</span> / <span id="total-q">28</span>
+                </div>
+                <div class="question-box" id="question-box">
+                    <h3 class="question-text" id="question-text"></h3>
+                    <div class="options" id="options"></div>
+                </div>
+                <div class="nav-buttons">
+                    <button id="prev-btn" class="nav-btn prev-btn" disabled>← 上一题</button>
+                    <button id="next-btn" class="nav-btn next-btn" disabled>下一题 →</button>
+                </div>
+            </section>
+
+            <!-- 结果页面 -->
+            <section id="result-screen" class="screen">
+                <div class="result-container">
+                    <div class="result-icon">🎉</div>
+                    <h2>测试完成!</h2>
+                    <div class="mbti-type">
+                        <span class="type-label">你的性格类型</span>
+                        <span class="type-value" id="mbti-type">INTJ</span>
+                    </div>
+                    <div class="type-description" id="type-description"></div>
+                    <div class="dimensions" id="dimensions"></div>
+                    <div class="action-buttons">
+                        <button id="share-btn" class="action-btn share-btn">📤 分享结果</button>
+                        <button id="restart-btn" class="action-btn restart-btn">🔄 重新测试</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <div id="loading-overlay" class="loading-overlay">
+            <div class="loading-spinner">🧠</div>
+            <p>AI分析中...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
