@@ -377,7 +377,7 @@ async function shareResult() {
         const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
         const hashTag = '#2026SBTI 个性测试';
         const botRef = '请到TG @EasternMysteryBot';
-        const shareText = `${hashTag} ${botRef}\n\n👤 ${name} 的专属档案\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji} ${result.dimInfo.cn}\n💎 疯狂指数：${totalScore}分\n\n🧠 ${result.diagnosis}`;
+        const shareText = `${hashTag} ${botRef}\n\n👤 ${name} 的专属档案\n🏷️ 【${result.labelCn}】\n📊 六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)\n\n🧠 ${result.aiReport.split('\n').slice(0,5).join('\n')}`;
 
         // 优先：先发文字到 TG 分享链接，再附上图片
         if (tg) {
@@ -416,8 +416,74 @@ async function shareResult() {
 
     } catch (e) {
         console.error('shareResult error:', e);
-        if (tg) tg.showAlert('截图失败，请检查网络后重试');
+        // 尝试使用 canvas 2D 绘制备选
+        try {
+            drawResultToCanvas(name, result);
+        } catch (e2) {
+            console.error('Canvas fallback error:', e2);
+            if (tg) tg.showAlert('截图失败，请检查网络后重试');
+        }
     }
+}
+
+// Canvas 2D 备选绘制函数
+function drawResultToCanvas(name, result) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 1000;
+    const ctx = canvas.getContext('2d');
+    
+    // 背景
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, 800, 1000);
+    
+    // 标题
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('SBTI 2026 六维人格测试', 400, 60);
+    
+    // 人格标签
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillText(`【${result.labelCn}】`, 400, 120);
+    
+    // 分数
+    ctx.fillStyle = '#aaa';
+    ctx.font = '20px sans-serif';
+    ctx.fillText(`六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)`, 400, 160);
+    
+    // 六维数据
+    result.bars.forEach((bar, i) => {
+        const y = 220 + i * 50;
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = bar.color;
+        ctx.textAlign = 'left';
+        ctx.fillText(`${bar.emoji} ${bar.cn}`, 60, y);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${bar.val}/10`, 740, y);
+        
+        // 进度条
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(180, y - 18, 440, 24);
+        ctx.fillStyle = bar.color;
+        ctx.fillRect(180, y - 18, bar.pct * 4.4, 24);
+    });
+    
+    // AI诊断
+    ctx.fillStyle = '#eee';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'left';
+    const lines = result.aiReport.split('\n').slice(0, 8);
+    lines.forEach((line, i) => {
+        ctx.fillText(line.substring(0, 40), 60, 560 + i * 28);
+    });
+    
+    // 下载
+    const link = document.createElement('a');
+    link.download = `SBTI_${name}_2026.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
 }
 
 // ── 更新 Bot 按钮 ───────────────────────────────
