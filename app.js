@@ -129,13 +129,14 @@ function showResult() {
     const result = window.SBTIData?.buildResult(name, scores);
     if (!result) return;
 
-    document.getElementById('result-icon').textContent = result.dimInfo.emoji;
-    document.getElementById('result-badge-cn').textContent = `【${result.titleCn}】`;
-    document.getElementById('result-badge-en').textContent = `[${result.titleEn}]`;
+    // 使用新的标签系统
+    document.getElementById('result-icon').textContent = result.primaryInfo.emoji;
+    document.getElementById('result-badge-cn').textContent = `【${result.labelCn}】`;
+    document.getElementById('result-badge-en').textContent = `[${result.labelEn}]`;
     document.getElementById('result-user').textContent = `${name} 的专属档案`;
-    document.getElementById('diagnosis-text').textContent = result.diagnosis;
+    document.getElementById('diagnosis-text').textContent = result.aiReport;
 
-    // 渲染得分条
+    // 渲染得分条（显示 x/10 格式）
     const barsEl = document.getElementById('score-bars');
     barsEl.innerHTML = '';
     result.bars.forEach((bar, i) => {
@@ -147,18 +148,16 @@ function showResult() {
             <div class="score-bar-track">
                 <div class="score-bar-fill" style="width:${bar.pct}%;background:${bar.color};"></div>
             </div>
-            <span class="score-bar-value">${bar.val}pt</span>
+            <span class="score-bar-value">${bar.val}/10</span>
         `;
         item.style.animationDelay = `${i * 0.1}s`;
         barsEl.appendChild(item);
     });
 
     // 更新总分和诊断
-    const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
-    const percentScore = Math.min(100, Math.round(totalScore / 60 * 100));
     const totalEl = document.getElementById('total-score');
     if (totalEl) {
-        totalEl.innerHTML = `🎯 六维总分：<span>${totalScore}</span>pt / 60pt (${percentScore}%)\n${result.madnessEmoji} ${result.madnessLevel}`;
+        totalEl.innerHTML = `🎯 六维总分：<span>${result.sixDimTotal}</span>/60 (${result.percentScore}%)\n${result.madnessEmoji} ${result.madnessLevel}`;
     }
 
     showPage('result');
@@ -211,27 +210,27 @@ function exportResultImage() {
     // 结果 emoji
     ctx.font = '80px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(result.dimInfo.emoji, 400, 240);
+    ctx.fillText(result.primaryInfo.emoji, 400, 240);
 
     // 结果类型徽章
     ctx.font = 'bold 32px sans-serif';
     ctx.fillStyle = '#6c5ce7';
-    ctx.fillText(`【${result.titleCn}】`, 400, 310);
+    ctx.fillText(`【${result.labelCn}】`, 400, 310);
 
     // 英文类型
     ctx.font = '20px sans-serif';
     ctx.fillStyle = '#888';
-    ctx.fillText(`[${result.titleEn}]`, 400, 350);
+    ctx.fillText(`[${result.labelEn}]`, 400, 350);
 
     // 用户名
     ctx.font = '22px sans-serif';
     ctx.fillStyle = '#aaa';
     ctx.fillText(`${name} 的专属档案`, 400, 400);
 
-    // 核心维度
+    // 主维度和次维度
     ctx.font = '18px sans-serif';
     ctx.fillStyle = '#6c5ce7';
-    ctx.fillText(`核心维度：${result.dimInfo.emoji} ${result.dimInfo.cn}（${result.dimInfo.en}）`, 400, 440);
+    ctx.fillText(`主维度：${result.primaryInfo.emoji} ${result.primaryInfo.cn} (${result.primaryScore}/10)`, 400, 440);
 
     // 雷达区背景
     roundRect(ctx, 40, 500, 720, 420, 20);
@@ -263,11 +262,11 @@ function exportResultImage() {
         roundRect(ctx, 280, y - 8, Math.max(bar.pct * 35, 8), 24, 12);
         ctx.fillStyle = bar.color;
         ctx.fill();
-        // 数值
+        // 数值 (x/10格式)
         ctx.fillStyle = '#888';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`${bar.val}pt`, 720, y + 8);
+        ctx.fillText(`${bar.val}/10`, 720, y + 8);
     });
 
     // AI诊断区背景（扩大区域以显示六维总分）
@@ -279,7 +278,7 @@ function exportResultImage() {
     ctx.font = 'bold 22px sans-serif';
     ctx.fillStyle = '#6c5ce7';
     ctx.textAlign = 'left';
-    ctx.fillText(`🎯 六维总分：${result.sixDimTotal}pt / 60pt (${result.percentScore}%)`, 70, 960);
+    ctx.fillText(`🎯 六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)`, 70, 960);
     
     // 疯狂等级
     ctx.font = '20px sans-serif';

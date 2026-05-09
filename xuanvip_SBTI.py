@@ -2160,11 +2160,132 @@ VIRAL_WORDS_2026 = [
 sbti_group_stats = {}  # chat_id -> {uid: dominant_dim, ...}
 
 
-def sbti_get_dominant_dim(scores: dict) -> str:
-    """返回得分最高的维度key"""
+def sbti_get_dimensions(scores: dict) -> tuple:
+    """返回(主维度key, 主维度分数, 第二维度key, 第二维度分数)"""
     if not scores:
-        return 'chaos'
-    return max(scores, key=scores.get)
+        return 'chaos', 0, 'apathy', 0
+    sorted_dims = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    first = sorted_dims[0]
+    second = sorted_dims[1] if len(sorted_dims) > 1 else ('apathy', 0)
+    return first[0], first[1], second[0], second[1]
+
+def sbti_build_personality_label(primary: str, primary_score: int, secondary: str, secondary_score: int) -> tuple:
+    """
+    基于分数推导人格标签
+    返回: (人格标签中文, 人格标签英文, AI诊断报告)
+    
+    规则：
+    1. 主维度决定核心人格类型
+    2. 主维度分数决定强度（0-10）
+    3. 第二维度影响人格变体
+    4. 双维度组合形成细分人格
+    """
+    # 强度级别
+    if primary_score >= 8:
+        intensity = '极高'
+        intensity_en = 'EXTREME'
+    elif primary_score >= 6:
+        intensity = '较高'
+        intensity_en = 'HIGH'
+    elif primary_score >= 4:
+        intensity = '中等'
+        intensity_en = 'MEDIUM'
+    elif primary_score >= 2:
+        intensity = '轻微'
+        intensity_en = 'LOW'
+    else:
+        intensity = '极低'
+        intensity_en = 'MINIMAL'
+    
+    # 双维度组合映射：主维度_第二维度 → (中文标签, 英文标签)
+    COMBO_LABELS = {
+        # apathy组合
+        ('apathy', 'ego'): ('冷眼旁观者', 'Detached Observer'),
+        ('apathy', 'chaos'): ('躺平革命家', 'Lying Flat Revolutionary'),
+        ('apathy', 'grind'): ('间歇性奋斗者', 'Intermittent Worker'),
+        ('apathy', 'vibe'): ('佛系共情人', 'Zen Empath'),
+        ('apathy', 'lore'): ('隐居人设家', 'Hidden Persona Architect'),
+        # ego组合
+        ('ego', 'apathy'): ('高冷自我人', 'Cold Self-Centered'),
+        ('ego', 'chaos'): ('疯狂主角', 'Chaotic Protagonist'),
+        ('ego', 'grind'): ('精英卷王', 'Elite Achiever'),
+        ('ego', 'vibe'): ('舞台掌控者', 'Stage Master'),
+        ('ego', 'lore'): ('人设演绎者', 'Persona Performer'),
+        # chaos组合
+        ('chaos', 'apathy'): ('佛系搅局者', 'Zen Chaos Agent'),
+        ('chaos', 'ego'): ('发疯主角', 'Unhinged Protagonist'),
+        ('chaos', 'grind'): ('效率疯子', 'Efficiency Maniac'),
+        ('chaos', 'vibe'): ('氛围破坏王', 'Vibe Destroyer'),
+        ('chaos', 'lore'): ('随机人设家', 'Random Persona Maker'),
+        # grind组合
+        ('grind', 'apathy'): ('伪装躺平卷王', 'Hidden Grind Lord'),
+        ('grind', 'ego'): ('成就导向者', 'Achievement Oriented'),
+        ('grind', 'chaos'): ('疯狂打工人', 'Chaotic Worker'),
+        ('grind', 'vibe'): ('工作氛围人', 'Work Vibe Person'),
+        ('grind', 'lore'): ('绩效人设家', 'KPI Persona Builder'),
+        # vibe组合
+        ('vibe', 'apathy'): ('社恐共情者', 'Shy Empath'),
+        ('vibe', 'ego'): ('社交明星', 'Social Star'),
+        ('vibe', 'chaos'): ('情绪过山车', 'Emotional Rollercoaster'),
+        ('vibe', 'grind'): ('职场温度计', 'Office Thermometer'),
+        ('vibe', 'lore'): ('人设共情师', 'Persona Empath'),
+        # lore组合
+        ('lore', 'apathy'): ('低调人设王', 'Low Key Persona Master'),
+        ('lore', 'ego'): ('人设建构师', 'Persona Architect'),
+        ('lore', 'chaos'): ('人设破坏狂', 'Persona Saboteur'),
+        ('lore', 'grind'): ('成就记录者', 'Achievement Chronicler'),
+        ('lore', 'vibe'): ('人设氛围组', 'Persona Vibe Group'),
+    }
+    
+    # 低分保护：如果主维度分数很低，使用第二维度作为主标签
+    if primary_score < 2:
+        label_cn = f"{SBTI_DIMS[secondary]['emoji']} {SBTI_DIMS[secondary]['cn']}倾向者"
+        label_en = f"{SBTI_DIMS[secondary]['en']} Leaning"
+    else:
+        key = (primary, secondary)
+        reverse_key = (secondary, primary)
+        if key in COMBO_LABELS:
+            label_cn = f"{SBTI_DIMS[primary]['emoji']} {COMBO_LABELS[key][0]}"
+            label_en = COMBO_LABELS[key][1]
+        elif reverse_key in COMBO_LABELS:
+            label_cn = f"{SBTI_DIMS[primary]['emoji']} {COMBO_LABELS[reverse_key][0]}"
+            label_en = COMBO_LABELS[reverse_key][1]
+        else:
+            label_cn = f"{SBTI_DIMS[primary]['emoji']} {SBTI_DIMS[primary]['cn']}倾向者"
+            label_en = f"{SBTI_DIMS[primary]['en']} Leaning"
+    
+    # AI诊断报告生成（基于分数推导）
+    primary_info = SBTI_DIMS[primary]
+    secondary_info = SBTI_DIMS[secondary]
+    
+    # 根据分数生成量化描述
+    def score_to_desc(dim_name, score):
+        if score >= 8: return f"{dim_name}极强（{score}分）"
+        elif score >= 6: return f"{dim_name}较强（{score}分）"
+        elif score >= 4: return f"{dim_name}中等（{score}分）"
+        elif score >= 2: return f"{dim_name}较弱（{score}分）"
+        else: return f"{dim_name}极弱（{score}分）"
+    
+    primary_desc = score_to_desc(primary_info['cn'], primary_score)
+    secondary_desc = score_to_desc(secondary_info['cn'], secondary_score)
+    total = primary_score + secondary_score
+    
+    ai_report = f"""📊 分数推导诊断：
+
+根据测试数据，你的人格特征分析如下：
+
+• 主特征：{primary_desc}
+• 次特征：{secondary_desc}
+• 双维总分：{total}分 / 20分（{int(intensity.replace('极','').replace('较','').replace('中','').replace('轻',''))*10}%强度）
+
+🧠 AI 分析：
+
+你的{intensity}「{primary_info['cn']}」特质在六维测试中得分最高（{primary_score}分），同时伴有「{secondary_info['cn']}」特质（{secondary_score}分）。这种组合意味着你在这两个维度上的表现显著高于平均水平。
+
+基于分数推导的人格解读：
+你是典型的【{label_cn}】，核心驱动力来自{primary_info['cn']}，次要特征为{secondary_info['cn']}。数据显示你在处理社交问题时，会优先激活这两个维度的心理模式。"""
+    
+    return label_cn, label_en, ai_report
 
 
 def sbti_get_viral_title(dominant_dim: str) -> tuple:
@@ -2179,27 +2300,36 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
     """
     生成 SBTI 结果文字卡（中英双语梗图文本）
     支持一键转发到 Telegram Story / Channel
+    
+    重构规则：
+    - 六个维度统一为 0-10 分
+    - 总分固定为 60 分
+    - 百分比动态计算
+    - AI诊断基于最高+第二高维度
+    - 人格标签由分数推导生成
     """
-    dominant = sbti_get_dominant_dim(scores)
-    title_cn, title_en = sbti_get_viral_title(dominant)
-    dim_info = SBTI_DIMS.get(dominant, {'cn': '神秘体', 'en': 'MYSTIC', 'emoji': '🔮'})
+    # 获取主维度和第二维度
+    primary, primary_score, secondary, secondary_score = sbti_get_dimensions(scores)
+    
+    # 生成人格标签和AI诊断（基于分数推导）
+    label_cn, label_en, ai_report = sbti_build_personality_label(
+        primary, primary_score, secondary, secondary_score
+    )
+    primary_info = SBTI_DIMS[primary]
+    secondary_info = SBTI_DIMS[secondary]
 
-    # 构建得分条形图并计算总分
-    total = max(sum(scores.values()), 1)
+    # 构建得分条形图
     score_bars = []
     for dim_key, info in SBTI_DIMS.items():
         val = scores.get(dim_key, 0)
-        # 每维度最高10分，bar_len为0-10格的进度条
-        bar_len = round(val / 10 * 10)  # val=0→0格, val=10→10格
-        bar_len = max(0, min(10, bar_len))  # 确保在0-10范围内
+        bar_len = max(0, min(10, round(val)))
         bar = '█' * bar_len + '░' * (10 - bar_len)
-        bar_str = f"{info['emoji']} {info['cn']:6s} [{bar}] {val:3.0f}pt"
+        bar_str = f"{info['emoji']} {info['cn']} [{bar}] {val}/10"
         score_bars.append(bar_str)
     
-    # 计算六维总分
+    # 计算六维总分和百分比
     six_dim_total = sum(scores.values())
-    # 百分制换算
-    max_possible = 60  # 6题 x 每题最高10分
+    max_possible = 60
     percent_score = min(100, int(six_dim_total / max_possible * 100))
     
     # 疯狂指数评级
@@ -2214,36 +2344,26 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
     else:
         madness_level = "😴 完全静止体"
 
-    # 性格短评模板（按主维度）
-    CHAR_DESC = {
-        'apathy': "能量守恒大师，用最少的投入换取最大的精神安宁。不是不爱，是爱得太累了。",
-        'ego':    "宇宙中心候选人，世界是你的镜子，每面都在反射你的高光时刻。",
-        'chaos':  "人间搅局艺术家，你的出现让世界的信噪比直线下降，但也充满了惊喜。",
-        'grind':  "卷王王中王，你把「内卷」升华成了一种美学，效率是你的信仰。",
-        'vibe':   "氛围感知雷达，你能在0.5秒内读懂房间里所有人的微表情，然后精准破防。",
-        'lore':   "人设工程师，你的每一条发言都是精心设计的叙事碎片，粉丝们正在拼图。",
-    }
-    char_desc = CHAR_DESC.get(dominant, "宇宙级神秘体，数据不足以描述你的复杂程度。")
-
     card = f"""
 =================================
-🔮 🧬 【SBTI 2026 发疯指数测试】 🧬 🔮
+🔮 🧬 【SBTI 2026 六维人格测试】 🧬 🔮
 =================================
 📕 {md_escape(name)} 的专属档案
 
-📌 类型认证
-  【{title_cn}】
-  [{title_en}]
-  核心维度：{dim_info['emoji']} {dim_info['cn']} ({dim_info['en']})
+📌 人格类型
+  【{label_cn}】
+  [{label_en}]
+  主维度：{primary_info['emoji']} {primary_info['cn']} ({primary_score}/10)
+  次维度：{secondary_info['emoji']} {secondary_info['cn']} ({secondary_score}/10)
 
 📊 六维雷达数据
 {chr(10).join(score_bars)}
 
-🎯 六维总分：{six_dim_total}pt / {max_possible}pt ({percent_score}%)
+🎯 六维总分：{six_dim_total}/60 ({percent_score}%)
    {madness_level}
 
 🧠 AI 诊断报告
-{char_desc}
+{ai_report}
 
 ━━━━━━━━━━━━━━━━━━━━━━
 🎯 *你可能还会喜欢*
@@ -2266,7 +2386,7 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
 📊 *查看本群战斗力* — 参与群排行
    /sbti_group
 
-#SBTI2026 #发疯指数 #{title_en.replace(' ','_')}
+#SBTI2026 #六维人格 #六维人格测试 #{label_en.replace(' ', '_')}
 """
     return card.strip()
 
@@ -2476,7 +2596,7 @@ def sbti_process_answer(uid: str, answer_idx: int) -> tuple:
         chat_id = ctx.get('chat_id', uid)
         if chat_id not in sbti_group_stats:
             sbti_group_stats[chat_id] = {}
-        sbti_group_stats[chat_id][uid] = sbti_get_dominant_dim(ctx['scores'])
+        sbti_group_stats[chat_id][uid] = sbti_get_dimensions(ctx['scores'])[0]
         sbti_context.pop(uid, None)
         return True, result_card, None
 

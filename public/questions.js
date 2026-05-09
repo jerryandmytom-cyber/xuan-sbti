@@ -578,55 +578,141 @@ function getViralTitle(dim) {
     return titles[Math.floor(Math.random() * titles.length)];
 }
 
+// 获取维度数据（主维度+第二维度）
+function getDimensions(scores) {
+    const sorted = Object.entries(scores)
+        .map(([key, val]) => ({ key, val: Math.round(val) }))
+        .sort((a, b) => b.val - a.val);
+    return {
+        primary: sorted[0]?.key || 'apathy',
+        primaryScore: sorted[0]?.val || 0,
+        secondary: sorted[1]?.key || 'apathy',
+        secondaryScore: sorted[1]?.val || 0
+    };
+}
+
+// 基于分数推导人格标签
+function buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore) {
+    // 强度级别
+    const intensityMap = { 10: '极高', 9: '极高', 8: '极高', 7: '较高', 6: '较高', 5: '中等', 4: '中等', 3: '轻微', 2: '轻微', 1: '极低', 0: '极低' };
+    const intensity = intensityMap[primaryScore] || '中等';
+    
+    // 双维度组合映射
+    const COMBO_LABELS = {
+        'apathy_ego': ['冷眼旁观者', 'Detached Observer'],
+        'apathy_chaos': ['躺平革命家', 'Lying Flat Revolutionary'],
+        'apathy_grind': ['间歇性奋斗者', 'Intermittent Worker'],
+        'apathy_vibe': ['佛系共情人', 'Zen Empath'],
+        'apathy_lore': ['隐居人设家', 'Hidden Persona Architect'],
+        'ego_apathy': ['高冷自我人', 'Cold Self-Centered'],
+        'ego_chaos': ['疯狂主角', 'Chaotic Protagonist'],
+        'ego_grind': ['精英卷王', 'Elite Achiever'],
+        'ego_vibe': ['舞台掌控者', 'Stage Master'],
+        'ego_lore': ['人设演绎者', 'Persona Performer'],
+        'chaos_apathy': ['佛系搅局者', 'Zen Chaos Agent'],
+        'chaos_ego': ['发疯主角', 'Unhinged Protagonist'],
+        'chaos_grind': ['效率疯子', 'Efficiency Maniac'],
+        'chaos_vibe': ['氛围破坏王', 'Vibe Destroyer'],
+        'chaos_lore': ['随机人设家', 'Random Persona Maker'],
+        'grind_apathy': ['伪装躺平卷王', 'Hidden Grind Lord'],
+        'grind_ego': ['成就导向者', 'Achievement Oriented'],
+        'grind_chaos': ['疯狂打工人', 'Chaotic Worker'],
+        'grind_vibe': ['工作氛围人', 'Work Vibe Person'],
+        'grind_lore': ['绩效人设家', 'KPI Persona Builder'],
+        'vibe_apathy': ['社恐共情者', 'Shy Empath'],
+        'vibe_ego': ['社交明星', 'Social Star'],
+        'vibe_chaos': ['情绪过山车', 'Emotional Rollercoaster'],
+        'vibe_grind': ['职场温度计', 'Office Thermometer'],
+        'vibe_lore': ['人设共情师', 'Persona Empath'],
+        'lore_apathy': ['低调人设王', 'Low Key Persona Master'],
+        'lore_ego': ['人设建构师', 'Persona Architect'],
+        'lore_chaos': ['人设破坏狂', 'Persona Saboteur'],
+        'lore_grind': ['成就记录者', 'Achievement Chronicler'],
+        'lore_vibe': ['人设氛围组', 'Persona Vibe Group'],
+    };
+    
+    // 低分保护
+    let labelCn, labelEn;
+    if (primaryScore < 2) {
+        labelCn = `${SBTI_DIMS[secondary].emoji} ${SBTI_DIMS[secondary].cn}倾向者`;
+        labelEn = `${SBTI_DIMS[secondary].en} Leaning`;
+    } else {
+        const key = `${primary}_${secondary}`;
+        const reverseKey = `${secondary}_${primary}`;
+        if (COMBO_LABELS[key]) {
+            labelCn = `${SBTI_DIMS[primary].emoji} ${COMBO_LABELS[key][0]}`;
+            labelEn = COMBO_LABELS[key][1];
+        } else if (COMBO_LABELS[reverseKey]) {
+            labelCn = `${SBTI_DIMS[primary].emoji} ${COMBO_LABELS[reverseKey][0]}`;
+            labelEn = COMBO_LABELS[reverseKey][1];
+        } else {
+            labelCn = `${SBTI_DIMS[primary].emoji} ${SBTI_DIMS[primary].cn}倾向者`;
+            labelEn = `${SBTI_DIMS[primary].en} Leaning`;
+        }
+    }
+    
+    // 分数描述
+    const scoreToDesc = (name, score) => {
+        if (score >= 8) return `${name}极强（${score}分）`;
+        if (score >= 6) return `${name}较强（${score}分）`;
+        if (score >= 4) return `${name}中等（${score}分）`;
+        if (score >= 2) return `${name}较弱（${score}分）`;
+        return `${name}极弱（${score}分）`;
+    };
+    
+    const primaryInfo = SBTI_DIMS[primary];
+    const secondaryInfo = SBTI_DIMS[secondary];
+    const total = primaryScore + secondaryScore;
+    
+    // AI诊断报告
+    const aiReport = `📊 分数推导诊断：\n\n根据测试数据，你的人格特征分析如下：\n\n• 主特征：${scoreToDesc(primaryInfo.cn, primaryScore)}\n• 次特征：${scoreToDesc(secondaryInfo.cn, secondaryScore)}\n• 双维总分：${total}分 / 20分\n\n🧠 AI 分析：\n\n你的「${primaryInfo.cn}」特质在六维测试中得分最高（${primaryScore}分），同时伴有「${secondaryInfo.cn}」特质（${secondaryScore}分）。这种组合意味着你在这两个维度上的表现显著高于平均水平。\n\n基于分数推导的人格解读：\n你是典型的【${labelCn}】，核心驱动力来自${primaryInfo.cn}，次要特征为${secondaryInfo.cn}。数据显示你在处理社交问题时，会优先激活这两个维度的心理模式。`;
+    
+    return { labelCn, labelEn, aiReport };
+}
+
 // 构建结果数据
 function buildResult(name, scores) {
-    const dominant = getDominantDim(scores);
-    const [titleCn, titleEn] = getViralTitle(dominant);
-    const dimInfo = SBTI_DIMS[dominant];
+    // 获取主维度和第二维度
+    const dims = getDimensions(scores);
+    const { primary, primaryScore, secondary, secondaryScore } = dims;
     
-    // 计算六维总分
+    // 生成人格标签和AI诊断
+    const { labelCn, labelEn, aiReport } = buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore);
+    
+    const primaryInfo = SBTI_DIMS[primary];
+    const secondaryInfo = SBTI_DIMS[secondary];
+    
+    // 计算六维总分和百分比
     const sixDimTotal = Object.values(scores).reduce((s, v) => s + v, 0);
-    const maxPossible = 60; // 6题 x 每题最高10分
+    const maxPossible = 60;
     const percentScore = Math.min(100, Math.round(sixDimTotal / maxPossible * 100));
     
     // 疯狂指数评级
-    let madnessLevel = '';
-    let madnessEmoji = '';
-    if (percentScore >= 90) {
-        madnessLevel = '疯狂模式全开';
-        madnessEmoji = '🌀';
-    } else if (percentScore >= 75) {
-        madnessLevel = '高度活跃状态';
-        madnessEmoji = '🔥';
-    } else if (percentScore >= 50) {
-        madnessLevel = '正常偏疯癫';
-        madnessEmoji = '✨';
-    } else if (percentScore >= 25) {
-        madnessLevel = '佛系养生型';
-        madnessEmoji = '😌';
-    } else {
-        madnessLevel = '完全静止体';
-        madnessEmoji = '😴';
-    }
+    let madnessLevel = '完全静止体';
+    let madnessEmoji = '😴';
+    if (percentScore >= 90) { madnessLevel = '疯狂模式全开'; madnessEmoji = '🌀'; }
+    else if (percentScore >= 75) { madnessLevel = '高度活跃状态'; madnessEmoji = '🔥'; }
+    else if (percentScore >= 50) { madnessLevel = '正常偏疯癫'; madnessEmoji = '✨'; }
+    else if (percentScore >= 25) { madnessLevel = '佛系养生型'; madnessEmoji = '😌'; }
 
+    // 构建六维进度条
     const bars = Object.entries(SBTI_DIMS).map(([key, info]) => {
         const val = Math.round(scores[key] || 0);
-        // 每维度最高10分，pct基于10分计算，确保整数
         const pct = Math.min(100, Math.round((val / 10) * 100));
         return { ...info, key, val, pct };
     });
 
-    // 生成详细诊断报告
-    const diagnosis = CHAR_DESCRIPTIONS[dominant];
-    const diagnosisReport = `${madnessEmoji} 六维总分：${sixDimTotal}pt / ${maxPossible}pt (${percentScore}%)\n${madnessEmoji} 疯狂等级：${madnessLevel}\n\n🧠 AI诊断：${diagnosis}`;
-
     return {
-        titleCn,
-        titleEn,
-        dominant,
-        dimInfo,
+        labelCn,
+        labelEn,
+        primary,
+        primaryScore,
+        secondary,
+        secondaryScore,
+        primaryInfo,
+        secondaryInfo,
         bars,
-        diagnosis: diagnosisReport,
+        aiReport,
         sixDimTotal,
         percentScore,
         madnessLevel,
