@@ -610,10 +610,10 @@ function buildResult(name, scores) {
     }
 
     const bars = Object.entries(SBTI_DIMS).map(([key, info]) => {
-        const val = scores[key] || 0;
-        // 每维度最高10分，pct基于10分计算
-        const pct = Math.round((val / 10) * 100);
-        return { ...info, key, val, pct: Math.min(pct, 100) };
+        const val = Math.round(scores[key] || 0);
+        // 每维度最高10分，pct基于10分计算，确保整数
+        const pct = Math.min(100, Math.round((val / 10) * 100));
+        return { ...info, key, val, pct };
     });
 
     // 生成详细诊断报告

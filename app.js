@@ -145,7 +145,7 @@ function showResult() {
             <span class="score-bar-emoji">${bar.emoji}</span>
             <span class="score-bar-label">${bar.cn}</span>
             <div class="score-bar-track">
-                <div class="score-bar-fill" style="width:${bar.pct * 10}%;background:${bar.color};"></div>
+                <div class="score-bar-fill" style="width:${bar.pct}%;background:${bar.color};"></div>
             </div>
             <span class="score-bar-value">${bar.val}pt</span>
         `;

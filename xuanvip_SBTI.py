@@ -2189,7 +2189,9 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
     score_bars = []
     for dim_key, info in SBTI_DIMS.items():
         val = scores.get(dim_key, 0)
-        bar_len = round(val / total * 10)
+        # 每维度最高10分，bar_len为0-10格的进度条
+        bar_len = round(val / 10 * 10)  # val=0→0格, val=10→10格
+        bar_len = max(0, min(10, bar_len))  # 确保在0-10范围内
         bar = '█' * bar_len + '░' * (10 - bar_len)
         score_bars.append(f"{info['emoji']} {info['cn']:6s} [{bar}] {val:3.0f}pt")
     
