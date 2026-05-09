@@ -591,6 +591,76 @@ function getDimensions(scores) {
     };
 }
 
+// 基于完整六维分数生成动态AI诊断报告
+function buildDynamicAIReport(scores) {
+    const dims = getDimensions(scores);
+    const { primary, primaryScore, secondary, secondaryScore } = dims;
+    
+    // 计算所有维度的分数和分布特征
+    const allScores = Object.values(scores).map(v => Math.round(v));
+    const total = allScores.reduce((s, v) => s + v, 0);
+    const maxScore = Math.max(...allScores);
+    const minScore = Math.min(...allScores);
+    
+    // 按分数排序
+    const sortedDims = Object.entries(scores)
+        .map(([key, val]) => ({ key, val: Math.round(val) }))
+        .sort((a, b) => b.val - a.val);
+    
+    // 分析分数分布模式
+    const highDims = sortedDims.filter(d => d.val >= 8);
+    const midDims = sortedDims.filter(d => d.val >= 4 && d.val < 8);
+    const lowDims = sortedDims.filter(d => d.val < 4);
+    
+    function cn(dim) { return SBTI_DIMS[dim]?.cn || dim; }
+    function emoji(dim) { return SBTI_DIMS[dim]?.emoji || '❓'; }
+    function level(s) {
+        if (s >= 9) return '极强';
+        if (s >= 7) return '较强';
+        if (s >= 5) return '中等';
+        if (s >= 3) return '较弱';
+        return '极弱';
+    }
+    
+    // 模式1：六边形战士
+    if (allScores.every(s => s >= 7)) {
+        return `📊 【六边形全能战士】\n\n你的六维分数呈现惊人的均衡分布：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维测试中同时在所有维度都保持7分以上，这是极为罕见的「六边形战士」配置。你的心理特征是全方位发展，没有明显的短板。\n\n建议：你的超能力是「场景切换」，在不同场合调用不同特质。`;
+    }
+    
+    // 模式2：极致偏科
+    if (highDims.length === 1 && lowDims.length >= 4) {
+        const dim = highDims[0];
+        const lowNames = lowDims.map(d => cn(d.key)).join('、');
+        return `📊 【单维极致型人格】\n\n你的六维分布呈现明显的「单极突凸」模式：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你的「${cn(dim.key)}」维度得分${dim.val}分，远超其他维度。这意味你在该维度上有极强的心理倾向。\n\n建议：尝试在低分维度上寻找突破口，让自己多几个「备份技能」。`;
+    }
+    
+    // 模式3：双重高峰
+    if (highDims.length === 2) {
+        const [d1, d2] = highDims;
+        return `📊 【双峰并立型人格】\n\n你的六维分布呈现「双峰并立」模式：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你在「${cn(d1.key)}」和「${cn(d2.key)}」两个维度上同时获得高分：\n- ${emoji(d1.key)} ${cn(d1.key)}：${d1.val}分\n- ${emoji(d2.key)} ${cn(d2.key)}：${d2.val}分\n\n这两个维度的组合形成你独特的人格光谱。\n\n建议：学会在两种模式间主动选择。`;
+    }
+    
+    // 模式4：全员佛系
+    if (total <= 15) {
+        return `📊 【超级佛系体】\n\n你的六维分数整体偏低：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维总分仅${total}分，所有维度都在3分以下。这是一种「超低能量」配置。\n\n建议：如果这是你的真实状态，那说明你是「躺平中的躺平」，精神内耗接近于零。`;
+    }
+    
+    // 模式5：高低分明
+    if (maxScore >= 8 && minScore <= 2) {
+        const highNames = highDims.map(d => `${emoji(d.key)}${cn(d.key)}(${d.val}分)`).join('、');
+        const lowNames = lowDims.map(d => `${emoji(d.key)}${cn(d.key)}(${d.val}分)`).join('、');
+        return `📊 【强烈反差型人格】\n\n你的六维分布呈现极端分化：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你的分数分布呈现明显的「两极分化」：\n- 高分区：${highNames}\n- 低分区：${lowNames}\n\n这种配置的内心冲突感极强。\n\n建议：接受自己的反差属性，这是你的独特魅力点。`;
+    }
+    
+    // 模式6：均衡中等型
+    if (allScores.every(s => s >= 3 && s <= 7)) {
+        return `📊 【均衡发展型人格】\n\n你的六维分布非常均衡：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维分数全部在3-7分区间，呈现「标准正态」分布。\n\n建议：你是「万金油」型人格，适合需要综合能力的岗位。`;
+    }
+    
+    // 默认模式
+    return `📊 【动态人格分析】\n\n你的六维分数分布：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI分析总结：\n\n- 主特征：${emoji(primary)} ${cn(primary)} ${primaryScore}分（${level(primaryScore)}）\n- 次特征：${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分（${level(secondaryScore)}）\n- 六维总分：${total}分 / 60分\n- 综合评估：你的${level(primaryScore)}「${cn(primary)}」特质与${level(secondaryScore)}「${cn(secondary)}」特质共同构成你的人格基础。`;
+}
+
 // 基于分数推导人格标签
 function buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore) {
     // 强度级别
@@ -676,8 +746,11 @@ function buildResult(name, scores) {
     const dims = getDimensions(scores);
     const { primary, primaryScore, secondary, secondaryScore } = dims;
     
-    // 生成人格标签和AI诊断
-    const { labelCn, labelEn, aiReport } = buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore);
+    // 生成人格标签
+    const { labelCn, labelEn } = buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore);
+    
+    // 生成动态AI诊断报告（基于完整分数分布）
+    const aiReport = buildDynamicAIReport(scores);
     
     const primaryInfo = SBTI_DIMS[primary];
     const secondaryInfo = SBTI_DIMS[secondary];
