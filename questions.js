@@ -611,8 +611,8 @@ function buildResult(name, scores) {
 
     const bars = Object.entries(SBTI_DIMS).map(([key, info]) => {
         const val = scores[key] || 0;
-        // 灵活计分：每题10分×6题=60分满分，pct反映真实水平（0-100范围）
-        const pct = Math.round((val / 60) * 10) * 10; // 映射到0-100%的十分位
+        // 每维度最高10分，pct基于10分计算
+        const pct = Math.round((val / 10) * 100);
         return { ...info, key, val, pct: Math.min(pct, 100) };
     });
 

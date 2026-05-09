@@ -155,9 +155,10 @@ function showResult() {
 
     // 更新总分和诊断
     const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
+    const percentScore = Math.min(100, Math.round(totalScore / 60 * 100));
     const totalEl = document.getElementById('total-score');
     if (totalEl) {
-        totalEl.innerHTML = `🎯 六维总分：<span>${result.sixDimTotal}</span>pt / 60pt (${result.percentScore}%)<br>${result.madnessEmoji} 疯狂等级：${result.madnessLevel}`;
+        totalEl.innerHTML = `🎯 六维总分：<span>${totalScore}</span>pt / 60pt (${percentScore}%)\n${result.madnessEmoji} ${result.madnessLevel}`;
     }
 
     showPage('result');
