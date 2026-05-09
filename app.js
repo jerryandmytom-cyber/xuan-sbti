@@ -251,8 +251,9 @@ function exportResultImage() {
         roundRect(ctx, 280, y - 8, 350, 24, 12);
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
         ctx.fill();
-        // 进度条填充
-        roundRect(ctx, 280, y - 8, Math.max(bar.pct * 35, 8), 24, 12);
+        // 进度条填充（使用百分制映射，bar.pct是0-100）
+        const barWidth = Math.max(Math.round((bar.pct / 100) * 350), 8);
+        roundRect(ctx, 280, y - 8, barWidth, 24, 12);
         ctx.fillStyle = bar.color;
         ctx.fill();
         // 数值

@@ -1,6 +1,10 @@
 /**
- * SBTI 2026 题库（28道，随机抽取6题）
+ * SBTI 2026 题库（50道，随机抽取6题）
  * 与 xuanvip_SBTI.py 保持同步
+ * 
+ * 维度权重说明：
+ * - 正向题：选项分数10=强关联，8=中关联，2=弱关联
+ * - 反向题：分数越低反而越能体现该维度特征
  */
 
 const SBTI_DIMS = {
@@ -335,6 +339,226 @@ const ALL_QUESTIONS = [
             { text: '找到几个知心人，岁月静好 🌙', score: { vibe: 10 } },
         ]
     },
+    {
+        id: 29,
+        text: '职场中你属于哪种类型？',
+        options: [
+            { text: '准时打卡，绩效A，朋友圈都是工作打卡 📊', score: { grind: 10 } },
+            { text: '踩点下班，工作只是生活的一部分 ⏰', score: { apathy: 10 } },
+            { text: '办公室政治专家，谁和谁不对付都门清 🕵️', score: { lore: 8, vibe: 2 } },
+            { text: '开会时内心戏丰富，表面点头如捣蒜 👔', score: { ego: 8, chaos: 2 } },
+        ]
+    },
+    {
+        id: 30,
+        text: '恋爱关系中你更接近？',
+        options: [
+            { text: '每日汇报行程，安全感来自于掌控 📱', score: { ego: 10 } },
+            { text: '各玩各的，信任是给对方自由 🦋', score: { apathy: 8, chaos: 2 } },
+            { text: '发朋友圈必带对象，营造幸福人设 📸', score: { lore: 10 } },
+            { text: '情绪跟着对方走，TA开心我就开心 😊', score: { vibe: 10 } },
+        ]
+    },
+    {
+        id: 31,
+        text: '社交媒体上你更在意？',
+        options: [
+            { text: '点赞数，数据证明存在感 📊', score: { grind: 10 } },
+            { text: '评论区互动，社交不能断 🔥', score: { vibe: 10 } },
+            { text: '粉丝增长曲线，数字让我兴奋 📈', score: { ego: 8, grind: 2 } },
+            { text: '收藏量，关注但不点赞是我的风格 💾', score: { lore: 8, apathy: 2 } },
+        ]
+    },
+    {
+        id: 32,
+        text: '你发朋友圈的真实目的是？',
+        options: [
+            { text: '记录生活，若干年后翻看 📖', score: { lore: 8, vibe: 2 } },
+            { text: '立人设，让别人羡慕去吧 😏', score: { ego: 10 } },
+            { text: '单纯想发，发完就不管了 🙌', score: { chaos: 8, apathy: 2 } },
+            { text: '工作需要，维持形象分 👔', score: { grind: 10 } },
+        ]
+    },
+    {
+        id: 33,
+        text: '以下哪种情况最让你崩溃？',
+        options: [
+            { text: '精心拍的照片只有12个赞 😱', score: { grind: 10 } },
+            { text: '被朋友当众揭短，社死现场 💀', score: { ego: 10 } },
+            { text: '计划全部打乱，从头再来 💔', score: { lore: 10 } },
+            { text: '和谁都不熟，尴尬的空气 🫠', score: { vibe: 10 } },
+        ]
+    },
+    {
+        id: 34,
+        text: '「收到请回复」对你来说意味着？',
+        options: [
+            { text: '必须秒回，否则会焦虑不安 📱', score: { grind: 10 } },
+            { text: '看心情，决定回不回 🎲', score: { chaos: 8, apathy: 2 } },
+            { text: '为什么要回复？我已读了不是吗 👀', score: { apathy: 10 } },
+            { text: '先看看别人回什么，跟风党 🐑', score: { vibe: 8, grind: 2 } },
+        ]
+    },
+    {
+        id: 35,
+        text: '你排队时一般会？',
+        options: [
+            { text: '研究怎么缩短排队时间，效率至上 ⏱️', score: { grind: 10 } },
+            { text: '和前后的人聊天，社交无处不在 💬', score: { vibe: 10 } },
+            { text: '刷手机发呆，时间自动流逝 📱', score: { apathy: 10 } },
+            { text: '内心编剧：前面的人会不会突然闹事 🎬', score: { chaos: 10 } },
+        ]
+    },
+    {
+        id: 36,
+        text: '你相册里数量最多的照片类型是？',
+        options: [
+            { text: '自拍，每个角度都要收集 📸', score: { ego: 10 } },
+            { text: '食物拍，美食当前先喂手机 🍜', score: { lore: 8, vibe: 2 } },
+            { text: '截图，合集可以出一本书 📚', score: { grind: 10 } },
+            { text: '没什么照片，定期清理是习惯 🧹', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 37,
+        text: '你如何应对群聊里的冲突？',
+        options: [
+            { text: '截图保存，以后万一用得上 📸', score: { lore: 10 } },
+            { text: '发表情包化解，幽默是武器 🎭', score: { chaos: 10 } },
+            { text: '潜水围观，内心写好了剧本 📝', score: { ego: 8, vibe: 2 } },
+            { text: '直接退出，眼不见为净 🚪', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 38,
+        text: '你更愿意为什么内容付费？',
+        options: [
+            { text: '知识付费课程，升值自己 💰', score: { grind: 10 } },
+            { text: '情绪价值产品，我快乐最重要 🎵', score: { vibe: 8, chaos: 2 } },
+            { text: '社交会员，圈子决定阶层 🌐', score: { ego: 10 } },
+            { text: '无所谓，有免费的就用 🙌', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 39,
+        text: '反问：你其实是个很卷的人吗？（诚实作答）',
+        options: [
+            { text: '是的，我很努力，我要出人头地 💪', score: { grind: 10 } },
+            { text: '不是，我只是假装很忙 😅', score: { lore: 8, apathy: 2 } },
+            { text: '看情况，被逼急了也会卷起来 🔥', score: { chaos: 8, vibe: 2 } },
+            { text: '我躺得很平，但偶尔也会焦虑 🛌', score: { apathy: 8, grind: 2 } },
+        ]
+    },
+    {
+        id: 40,
+        text: '反问：你在意别人对你的评价吗？',
+        options: [
+            { text: '完全不在意，我的人生我说了算 🙌', score: { ego: 10 } },
+            { text: '表面不在意，内心已经分析了三遍 🧠', score: { lore: 10 } },
+            { text: '会在意，但不会表现出来 🎭', score: { vibe: 10 } },
+            { text: '无所谓，反正大家都在忙自己的事 👀', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 41,
+        text: '反问：你是朋友圈的中心人物吗？',
+        options: [
+            { text: '必须是，有我在气氛就不会冷 🎉', score: { ego: 10 } },
+            { text: '不是，我是幕后玩家 👻', score: { lore: 10 } },
+            { text: '看场合，有时候我只想安静 🎧', score: { apathy: 8, vibe: 2 } },
+            { text: '我负责制造氛围，不是主角 ✨', score: { chaos: 8, vibe: 2 } },
+        ]
+    },
+    {
+        id: 42,
+        text: '反问：你真的能接受躺平吗？',
+        options: [
+            { text: '躺平是梦想，但钱包不允许 💸', score: { grind: 8, apathy: 2 } },
+            { text: '可以，我已经躺平很久了 😴', score: { apathy: 10 } },
+            { text: '嘴上躺平，身体很诚实 🏃', score: { chaos: 10 } },
+            { text: '间歇性躺平，持续性焦虑 🔄', score: { vibe: 8, grind: 2 } },
+        ]
+    },
+    {
+        id: 43,
+        text: '你在以下哪个场景最自在？',
+        options: [
+            { text: '一个人在家，完全不用社交 🏠', score: { apathy: 10 } },
+            { text: '会议室，所有的目光都聚焦在我身上 👑', score: { ego: 10 } },
+            { text: '深夜的便利店，安静治愈 🌙', score: { lore: 8, vibe: 2 } },
+            { text: '音乐节，人浪涌动，释放自我 🎸', score: { chaos: 10 } },
+        ]
+    },
+    {
+        id: 44,
+        text: '你的消费观更接近？',
+        options: [
+            { text: '该花花该省省，每分钱都要花在刀刃上 🗡️', score: { grind: 10 } },
+            { text: '今天心情好，买！明天再说 💳', score: { chaos: 10 } },
+            { text: '买什么都像在构建人设的一部分 🎭', score: { lore: 10 } },
+            { text: '买之前先看测评，不交智商税 📱', score: { vibe: 8, grind: 2 } },
+        ]
+    },
+    {
+        id: 45,
+        text: '当朋友突然找你借钱，你会？',
+        options: [
+            { text: '直接问要多少，转账不废话 💰', score: { vibe: 10 } },
+            { text: '先发个表情包拖延，再想办法 😅', score: { chaos: 10 } },
+            { text: '编个理由婉拒，关系没到那份上 🚫', score: { ego: 10 } },
+            { text: '假装没看到，过几天再说 🙈', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 46,
+        text: '你更相信什么？',
+        options: [
+            { text: '努力就会有回报，天道酬勤 📈', score: { grind: 10 } },
+            { text: '运气，选择大于努力 🍀', score: { chaos: 10 } },
+            { text: '关系，有人脉走遍天下 🌐', score: { ego: 10 } },
+            { text: '缘分，命里有时终须有 🕊️', score: { lore: 8, vibe: 2 } },
+        ]
+    },
+    {
+        id: 47,
+        text: '你更愿意为什么花时间？',
+        options: [
+            { text: '自我提升，学习新技能永远不亏 📚', score: { grind: 10 } },
+            { text: '维护关系，情感投资很重要 💕', score: { vibe: 10 } },
+            { text: '经营人设，每个细节都要完美 🎨', score: { lore: 10 } },
+            { text: '发呆放空，让大脑彻底休息 🧘', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 48,
+        text: '你在群里最常扮演的角色是？',
+        options: [
+            { text: '气氛组，发表情包我最强 🎭', score: { chaos: 10 } },
+            { text: '信息枢纽，有事找我准没错 📡', score: { vibe: 10 } },
+            { text: '潜水员，默默观察一切 👀', score: { apathy: 8, lore: 2 } },
+            { text: '话题发起者，带节奏我在行 🚀', score: { ego: 10 } },
+        ]
+    },
+    {
+        id: 49,
+        text: '反问：你觉得自己是个有特点的人吗？',
+        options: [
+            { text: '必须有，我的存在就是特点 ✨', score: { ego: 10 } },
+            { text: '特点不明显，但有一点点 🦋', score: { lore: 8, vibe: 2 } },
+            { text: '我不是人民币，做不到人人喜欢 🤷', score: { apathy: 10 } },
+            { text: '特点这种东西是可以打造的 🎭', score: { lore: 10 } },
+        ]
+    },
+    {
+        id: 50,
+        text: '你希望别人记住你的是什么？',
+        options: [
+            { text: '我取得的成就，站C位的资本 🏆', score: { ego: 10 } },
+            { text: '我是个有趣的人，和我聊天很快乐 😄', score: { chaos: 8, vibe: 2 } },
+            { text: '我对朋友很好，值得深交 🤝', score: { vibe: 10 } },
+            { text: '没什么希望，被记住也累 🙈', score: { apathy: 10 } },
+        ]
+    },
 ];
 
 // 随机抽取n道题
@@ -363,8 +587,9 @@ function buildResult(name, scores) {
 
     const bars = Object.entries(SBTI_DIMS).map(([key, info]) => {
         const val = scores[key] || 0;
-        const pct = Math.round((val / total) * 10);
-        return { ...info, key, val, pct };
+        // 灵活计分：每题10分×6题=60分满分，pct反映真实水平（0-100范围）
+        const pct = Math.round((val / 60) * 10) * 10; // 映射到0-100%的十分位
+        return { ...info, key, val, pct: Math.min(pct, 100) };
     });
 
     return {
