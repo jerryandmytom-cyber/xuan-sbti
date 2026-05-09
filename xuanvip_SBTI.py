@@ -2193,7 +2193,8 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
         bar_len = round(val / 10 * 10)  # val=0→0格, val=10→10格
         bar_len = max(0, min(10, bar_len))  # 确保在0-10范围内
         bar = '█' * bar_len + '░' * (10 - bar_len)
-        score_bars.append(f"{info['emoji']} {info['cn']:6s} [{bar}] {val:3.0f}pt")
+        bar_str = f"{info['emoji']} {info['cn']:6s} [{bar}] {val:3.0f}pt"
+        score_bars.append(bar_str)
     
     # 计算六维总分
     six_dim_total = sum(scores.values())
