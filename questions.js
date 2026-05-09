@@ -583,7 +583,31 @@ function buildResult(name, scores) {
     const dominant = getDominantDim(scores);
     const [titleCn, titleEn] = getViralTitle(dominant);
     const dimInfo = SBTI_DIMS[dominant];
-    const total = Math.max(Object.values(scores).reduce((s, v) => s + v, 0), 1);
+    
+    // 计算六维总分
+    const sixDimTotal = Object.values(scores).reduce((s, v) => s + v, 0);
+    const maxPossible = 60; // 6题 x 每题最高10分
+    const percentScore = Math.min(100, Math.round(sixDimTotal / maxPossible * 100));
+    
+    // 疯狂指数评级
+    let madnessLevel = '';
+    let madnessEmoji = '';
+    if (percentScore >= 90) {
+        madnessLevel = '疯狂模式全开';
+        madnessEmoji = '🌀';
+    } else if (percentScore >= 75) {
+        madnessLevel = '高度活跃状态';
+        madnessEmoji = '🔥';
+    } else if (percentScore >= 50) {
+        madnessLevel = '正常偏疯癫';
+        madnessEmoji = '✨';
+    } else if (percentScore >= 25) {
+        madnessLevel = '佛系养生型';
+        madnessEmoji = '😌';
+    } else {
+        madnessLevel = '完全静止体';
+        madnessEmoji = '😴';
+    }
 
     const bars = Object.entries(SBTI_DIMS).map(([key, info]) => {
         const val = scores[key] || 0;
@@ -592,13 +616,21 @@ function buildResult(name, scores) {
         return { ...info, key, val, pct: Math.min(pct, 100) };
     });
 
+    // 生成详细诊断报告
+    const diagnosis = CHAR_DESCRIPTIONS[dominant];
+    const diagnosisReport = `${madnessEmoji} 六维总分：${sixDimTotal}pt / ${maxPossible}pt (${percentScore}%)\n${madnessEmoji} 疯狂等级：${madnessLevel}\n\n🧠 AI诊断：${diagnosis}`;
+
     return {
         titleCn,
         titleEn,
         dominant,
         dimInfo,
         bars,
-        diagnosis: CHAR_DESCRIPTIONS[dominant],
+        diagnosis: diagnosisReport,
+        sixDimTotal,
+        percentScore,
+        madnessLevel,
+        madnessEmoji,
         name,
     };
 }

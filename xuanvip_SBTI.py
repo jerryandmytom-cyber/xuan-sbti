@@ -2184,7 +2184,7 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
     title_cn, title_en = sbti_get_viral_title(dominant)
     dim_info = SBTI_DIMS.get(dominant, {'cn': '神秘体', 'en': 'MYSTIC', 'emoji': '🔮'})
 
-    # 构建得分条形图
+    # 构建得分条形图并计算总分
     total = max(sum(scores.values()), 1)
     score_bars = []
     for dim_key, info in SBTI_DIMS.items():
@@ -2192,6 +2192,24 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
         bar_len = round(val / total * 10)
         bar = '█' * bar_len + '░' * (10 - bar_len)
         score_bars.append(f"{info['emoji']} {info['cn']:6s} [{bar}] {val:3.0f}pt")
+    
+    # 计算六维总分
+    six_dim_total = sum(scores.values())
+    # 百分制换算
+    max_possible = 60  # 6题 x 每题最高10分
+    percent_score = min(100, int(six_dim_total / max_possible * 100))
+    
+    # 疯狂指数评级
+    if percent_score >= 90:
+        madness_level = "🌀 疯狂模式全开"
+    elif percent_score >= 75:
+        madness_level = "🔥 高度活跃状态"
+    elif percent_score >= 50:
+        madness_level = "✨ 正常偏疯癫"
+    elif percent_score >= 25:
+        madness_level = "😌 佛系养生型"
+    else:
+        madness_level = "😴 完全静止体"
 
     # 性格短评模板（按主维度）
     CHAR_DESC = {
@@ -2217,6 +2235,9 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
 
 📊 六维雷达数据
 {chr(10).join(score_bars)}
+
+🎯 六维总分：{six_dim_total}pt / {max_possible}pt ({percent_score}%)
+   {madness_level}
 
 🧠 AI 诊断报告
 {char_desc}

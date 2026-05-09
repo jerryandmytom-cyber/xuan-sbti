@@ -153,11 +153,11 @@ function showResult() {
         barsEl.appendChild(item);
     });
 
-    // 总分
+    // 更新总分和诊断
     const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
     const totalEl = document.getElementById('total-score');
     if (totalEl) {
-        totalEl.innerHTML = `💎 疯狂指数：<span>${totalScore}</span>（六项指数总和）`;
+        totalEl.innerHTML = `🎯 六维总分：<span>${result.sixDimTotal}</span>pt / 60pt (${result.percentScore}%)<br>${result.madnessEmoji} 疯狂等级：${result.madnessLevel}`;
     }
 
     showPage('result');
@@ -269,21 +269,31 @@ function exportResultImage() {
         ctx.fillText(`${bar.val}pt`, 720, y + 8);
     });
 
-    // AI诊断区背景
-    roundRect(ctx, 40, 940, 720, 140, 20);
+    // AI诊断区背景（扩大区域以显示六维总分）
+    roundRect(ctx, 40, 920, 720, 180, 20);
     ctx.fillStyle = 'rgba(26,26,58,0.9)';
     ctx.fill();
+
+    // 六维总分显示
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.textAlign = 'left';
+    ctx.fillText(`🎯 六维总分：${result.sixDimTotal}pt / 60pt (${result.percentScore}%)`, 70, 960);
+    
+    // 疯狂等级
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#e84393';
+    ctx.fillText(`${result.madnessEmoji} ${result.madnessLevel}`, 70, 990);
 
     // AI诊断标题
     ctx.fillStyle = '#888';
     ctx.font = '18px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🧠 AI 诊断报告', 70, 975);
+    ctx.fillText('🧠 AI 诊断报告', 70, 1025);
 
-    // 诊断内容
-    ctx.font = '20px sans-serif';
+    // 诊断内容（最后一行）
+    ctx.font = '18px sans-serif';
     ctx.fillStyle = '#eee';
-    ctx.fillText(result.diagnosis, 70, 1010, 660);
+    ctx.fillText(CHAR_DESCRIPTIONS[result.dominant] || result.diagnosis.split('\n').pop(), 70, 1055, 660);
 
     // 底部
     ctx.fillStyle = '#6c5ce7';

@@ -153,6 +153,13 @@ function showResult() {
         barsEl.appendChild(item);
     });
 
+    // 更新总分和诊断
+    const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
+    const totalEl = document.getElementById('total-score');
+    if (totalEl) {
+        totalEl.innerHTML = `🎯 六维总分：<span>${result.sixDimTotal}</span>pt / 60pt (${result.percentScore}%)<br>${result.madnessEmoji} 疯狂等级：${result.madnessLevel}`;
+    }
+
     showPage('result');
 }
 
@@ -251,9 +258,8 @@ function exportResultImage() {
         roundRect(ctx, 280, y - 8, 350, 24, 12);
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
         ctx.fill();
-        // 进度条填充（使用百分制映射，bar.pct是0-100）
-        const barWidth = Math.max(Math.round((bar.pct / 100) * 350), 8);
-        roundRect(ctx, 280, y - 8, barWidth, 24, 12);
+        // 进度条填充
+        roundRect(ctx, 280, y - 8, Math.max(bar.pct * 35, 8), 24, 12);
         ctx.fillStyle = bar.color;
         ctx.fill();
         // 数值
@@ -263,27 +269,37 @@ function exportResultImage() {
         ctx.fillText(`${bar.val}pt`, 720, y + 8);
     });
 
-    // AI诊断区背景
-    roundRect(ctx, 40, 940, 720, 140, 20);
+    // AI诊断区背景（扩大区域以显示六维总分）
+    roundRect(ctx, 40, 920, 720, 180, 20);
     ctx.fillStyle = 'rgba(26,26,58,0.9)';
     ctx.fill();
+
+    // 六维总分显示
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.textAlign = 'left';
+    ctx.fillText(`🎯 六维总分：${result.sixDimTotal}pt / 60pt (${result.percentScore}%)`, 70, 960);
+    
+    // 疯狂等级
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#e84393';
+    ctx.fillText(`${result.madnessEmoji} ${result.madnessLevel}`, 70, 990);
 
     // AI诊断标题
     ctx.fillStyle = '#888';
     ctx.font = '18px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('🧠 AI 诊断报告', 70, 975);
+    ctx.fillText('🧠 AI 诊断报告', 70, 1025);
 
-    // 诊断内容
-    ctx.font = '20px sans-serif';
+    // 诊断内容（最后一行）
+    ctx.font = '18px sans-serif';
     ctx.fillStyle = '#eee';
-    ctx.fillText(result.diagnosis, 70, 1010, 660);
+    ctx.fillText(CHAR_DESCRIPTIONS[result.dominant] || result.diagnosis.split('\n').pop(), 70, 1055, 660);
 
     // 底部
     ctx.fillStyle = '#6c5ce7';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('@EasternMysteryBot · #SBTI2026 #疯狂指数', 400, 1140);
+    ctx.fillText('#2026SBTI 个性测试  请到TG @EasternMysteryBot', 400, 1140);
     ctx.fillStyle = '#444';
     ctx.font = '14px sans-serif';
     ctx.fillText('Powered by 玄学大师 × SBTI 2026', 400, 1170);
@@ -320,7 +336,6 @@ async function shareResult() {
         return;
     }
 
-    // 先确保结果页可见
     const resultPage = document.getElementById('result');
     const resultCard = resultPage?.querySelector('.result-card');
     if (!resultCard) {
@@ -331,47 +346,73 @@ async function shareResult() {
     if (tg) tg.HapticFeedback.impactOccurred('light');
 
     try {
+        // 等待上一帧渲染完成
+        await new Promise(r => setTimeout(r, 100));
+
         const canvas = await html2canvas(resultCard, {
             backgroundColor: '#0a0a1a',
-            scale: 2,
+            scale: 1,
             useCORS: true,
             logging: false,
-            allowTaint: true,
+            allowTaint: false,
             foreignObjectRendering: false,
+            onclone: (clonedDoc) => {
+                // 确保动画已完成
+                const fills = clonedDoc.querySelectorAll('.score-bar-fill');
+                fills.forEach(f => {
+                    f.style.transition = 'none';
+                    f.style.animation = 'none';
+                    // 直接设置最终宽度
+                    const track = f.parentElement;
+                    if (track) {
+                        const trackW = track.offsetWidth;
+                        const w = parseFloat(f.style.width) || '0%';
+                        f.style.width = w;
+                    }
+                });
+            }
         });
 
         const dataUrl = canvas.toDataURL('image/png');
+        const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
+        const hashTag = '#2026SBTI 个性测试';
+        const botRef = '请到TG @EasternMysteryBot';
+        const shareText = `${hashTag} ${botRef}\n\n👤 ${name} 的专属档案\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji} ${result.dimInfo.cn}\n💎 疯狂指数：${totalScore}分\n\n🧠 ${result.diagnosis}`;
 
-        if (tg && navigator.share) {
-            // 尝试带图片分享
+        // 优先：先发文字到 TG 分享链接，再附上图片
+        if (tg) {
+            // 构造 TG 分享链接（带文字）
+            const encodedText = encodeURIComponent(`${hashTag} ${botRef}`);
+            const tgShareUrl = `https://t.me/EasternMysteryBot?text=${encodedText}`;
+
             try {
                 const blob = await (await fetch(dataUrl)).blob();
                 const file = new File([blob], `SBTI_${name}_2026.png`, { type: 'image/png' });
-                await navigator.share({
-                    files: [file],
-                    text: `🧬 SBTI 2026 疯狂指数测试\n\n👤 ${name} 的专属档案\n\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji}\n\n🧠 ${result.diagnosis}\n\n#SBTI2026 #疯狂指数`,
-                });
-                return;
-            } catch {
-                // 文件分享不支持，降级为纯文字
-            }
-            // 纯文字分享
-            try {
-                await navigator.share({
-                    text: `🧬 SBTI 2026 疯狂指数测试\n\n👤 ${name} 的专属档案\n\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji} ${result.dimInfo.cn}\n\n🧠 ${result.diagnosis}\n\n#SBTI2026 #疯狂指数`,
-                });
+
+                // 尝试同时分享文字+图片
+                await navigator.share({ files: [file], text: shareText });
                 return;
             } catch (e) {
-                // 用户取消或不支持，走下载
+                // 图片+文字不被支持 → 打开 TG 分享链接让用户粘贴文字，同时下载图片
+                const link = document.createElement('a');
+                link.download = `SBTI_${name}_2026.png`;
+                link.href = dataUrl;
+                link.click();
+
+                // 打开 TG 分享链接（用户可在 TG 里粘贴文字）
+                setTimeout(() => {
+                    window.open(tgShareUrl, '_blank');
+                }, 300);
+                if (tg) tg.HapticFeedback.impactOccurred('medium');
+                return;
             }
         }
 
-        // 降级：下载图片
+        // 无 Telegram 环境：下载图片
         const link = document.createElement('a');
         link.download = `SBTI_${name}_2026.png`;
         link.href = dataUrl;
         link.click();
-        if (tg) tg.HapticFeedback.impactOccurred('medium');
 
     } catch (e) {
         console.error('shareResult error:', e);
