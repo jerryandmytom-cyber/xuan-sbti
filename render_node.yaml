@@ -1,19 +1,33 @@
 # ===========================================================
-# Render Web Service - SBTI Mini App (Node.js)
+# Render Blueprint - SBTI Mini App (Node.js)
 # ===========================================================
-# 用于SBTI性格测试纯前端应用
+# SBTI 2026 疯狂指数个性测试 Mini App
+
+database:
+  # 不需要数据库
 
 services:
   - type: web
     name: sbti-miniapp
-    env: node
+    runtime: node
     region: singapore
     plan: free
+    autoDeploy: true
     
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: |
+      npm install
+    startCommand: |
+      node server.js
+    
     healthCheckPath: /health
     
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+
+files:
+  - /public
+  - /server.js
+  - /package.json
