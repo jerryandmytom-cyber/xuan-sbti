@@ -1,7 +1,0 @@
-# 八字算命Bot依赖
-python-telegram-bot==21.5
-pyTelegramBotAPI==4.14.0
-aiosqlite==0.20.0
-lunarcalendar==0.0.9
-flask>=3.0.0
-gunicorn>=21.0.0
