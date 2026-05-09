@@ -1,269 +1,391 @@
 /**
- * 🔮 SBTI 性格测试 Mini App
- * 前端应用逻辑
+ * SBTI Mini App - Main Application Logic
  */
 
-(function() {
-    'use strict';
+let tg = null;
+let user = null;
+let currentQuestions = [];
+let currentStep = 0;
+let scores = { apathy: 0, ego: 0, chaos: 0, grind: 0, vibe: 0, lore: 0 };
 
-    const AppState = {
-        currentQuestion: 0,
-        answers: [],
-        totalQuestions: 0,
-        result: null
-    };
+// ── 初始化 ──────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    tg = window.Telegram?.WebApp;
+    if (tg) {
+        tg.ready();
+        user = tg.initDataUnsafe?.user;
+    }
 
-    let tg = window.Telegram?.WebApp;
+    // 闪屏延迟
+    setTimeout(() => {
+        const splash = document.getElementById('splash');
+        splash.classList.add('fade-out');
+        setTimeout(() => {
+            splash.classList.add('gone');
+            showPage('home');
+        }, 600);
+    }, 1500);
 
-    function initTelegram() {
-        if (tg) {
-            tg.ready();
-            tg.expand();
+    // 按钮事件
+    document.getElementById('start-btn').addEventListener('click', startTest);
+    document.getElementById('retest-btn').addEventListener('click', startTest);
+    document.getElementById('share-btn').addEventListener('click', shareResult);
+});
+
+// ── 页面切换 ────────────────────────────────────
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+    const el = document.getElementById(pageId);
+    if (el) el.classList.add('visible');
+    // 等待 visibility 过渡完成后（400ms）再滚动，确保元素已渲染
+    setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    }, 450);
+    if (tg) {
+        tg.expand();
+    }
+}
+
+// ── 开始测试 ────────────────────────────────────
+function startTest() {
+    scores = { apathy: 0, ego: 0, chaos: 0, grind: 0, vibe: 0, lore: 0 };
+    currentStep = 0;
+    currentQuestions = window.SBTIData?.getRandomQuestions(6) || [];
+    showPage('quiz');
+    renderQuestion();
+}
+
+// ── 渲染题目 ────────────────────────────────────
+function renderQuestion() {
+    const q = currentQuestions[currentStep];
+    if (!q) return showResult();
+
+    const stepLabel = document.getElementById('step-label');
+    const aiBadge = document.getElementById('ai-badge');
+    const questionText = document.getElementById('question-text');
+    const optionsEl = document.getElementById('options');
+    const progressFill = document.getElementById('progress-fill');
+
+    const total = currentQuestions.length;
+    stepLabel.textContent = `第 ${currentStep + 1}/${total} 题`;
+
+    // AI badge：第4题开始显示动态题标记
+    if (currentStep >= 3) {
+        aiBadge.classList.remove('hidden');
+    } else {
+        aiBadge.classList.add('hidden');
+    }
+
+    // 进度条
+    progressFill.style.width = `${((currentStep) / total) * 100}%`;
+
+    questionText.textContent = q.text;
+
+    optionsEl.innerHTML = '';
+    q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerHTML = `<span class="option-number">${idx + 1}</span><span>${opt.text}</span>`;
+        btn.addEventListener('click', () => selectOption(idx));
+        optionsEl.appendChild(btn);
+    });
+}
+
+// ── 选择选项 ────────────────────────────────────
+function selectOption(idx) {
+    const q = currentQuestions[currentStep];
+    const opt = q.options[idx];
+
+    // 累加得分
+    if (opt.score) {
+        for (const [dim, pts] of Object.entries(opt.score)) {
+            scores[dim] = (scores[dim] || 0) + pts;
         }
     }
 
-    const API = {
-        async getQuestions() {
+    // 视觉反馈
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach((b, i) => {
+        if (i === idx) b.classList.add('selected');
+        b.style.pointerEvents = 'none';
+    });
+
+    // 下一题（延迟让用户看到选择效果）
+    setTimeout(() => {
+        currentStep++;
+        if (currentStep >= currentQuestions.length) {
+            showResult();
+        } else {
+            renderQuestion();
+        }
+    }, 400);
+}
+
+// ── 显示结果 ────────────────────────────────────
+function showResult() {
+    const name = user?.first_name || '测试者';
+    const result = window.SBTIData?.buildResult(name, scores);
+    if (!result) return;
+
+    document.getElementById('result-icon').textContent = result.dimInfo.emoji;
+    document.getElementById('result-badge-cn').textContent = `【${result.titleCn}】`;
+    document.getElementById('result-badge-en').textContent = `[${result.titleEn}]`;
+    document.getElementById('result-user').textContent = `${name} 的专属档案`;
+    document.getElementById('diagnosis-text').textContent = result.diagnosis;
+
+    // 渲染得分条
+    const barsEl = document.getElementById('score-bars');
+    barsEl.innerHTML = '';
+    result.bars.forEach((bar, i) => {
+        const item = document.createElement('div');
+        item.className = 'score-bar-item';
+        item.innerHTML = `
+            <span class="score-bar-emoji">${bar.emoji}</span>
+            <span class="score-bar-label">${bar.cn}</span>
+            <div class="score-bar-track">
+                <div class="score-bar-fill" style="width:${bar.pct * 10}%;background:${bar.color};"></div>
+            </div>
+            <span class="score-bar-value">${bar.val}pt</span>
+        `;
+        item.style.animationDelay = `${i * 0.1}s`;
+        barsEl.appendChild(item);
+    });
+
+    showPage('result');
+}
+
+// ── 导出图片 ────────────────────────────────────
+function exportResultImage() {
+    const name = user?.first_name || '测试者';
+    const result = window.SBTIData?.buildResult(name, scores);
+    if (!result) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 1200;
+    const ctx = canvas.getContext('2d');
+
+    // 背景
+    const grad = ctx.createLinearGradient(0, 0, 0, 1200);
+    grad.addColorStop(0, '#0a0a1a');
+    grad.addColorStop(1, '#12122a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 800, 1200);
+
+    // 顶部装饰线
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillRect(0, 0, 800, 6);
+
+    // 标题
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 42px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🧬 SBTI 2026 疯狂指数个性测试', 400, 80);
+
+    // 分隔线
+    ctx.strokeStyle = '#6c5ce7';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(80, 110);
+    ctx.lineTo(720, 110);
+    ctx.stroke();
+
+    // 卡片背景
+    roundRect(ctx, 40, 140, 720, 340, 20);
+    ctx.fillStyle = 'rgba(26,26,58,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = '#6c5ce7';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // 结果 emoji
+    ctx.font = '80px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(result.dimInfo.emoji, 400, 240);
+
+    // 结果类型徽章
+    ctx.font = 'bold 32px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillText(`【${result.titleCn}】`, 400, 310);
+
+    // 英文类型
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#888';
+    ctx.fillText(`[${result.titleEn}]`, 400, 350);
+
+    // 用户名
+    ctx.font = '22px sans-serif';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`${name} 的专属档案`, 400, 400);
+
+    // 核心维度
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillText(`核心维度：${result.dimInfo.emoji} ${result.dimInfo.cn}（${result.dimInfo.en}）`, 400, 440);
+
+    // 雷达区背景
+    roundRect(ctx, 40, 500, 720, 420, 20);
+    ctx.fillStyle = 'rgba(26,26,58,0.9)';
+    ctx.fill();
+
+    // 雷达标题
+    ctx.fillStyle = '#888';
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('📊 六维雷达数据', 70, 540);
+
+    // 得分条
+    result.bars.forEach((bar, i) => {
+        const y = 570 + i * 60;
+        // emoji
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(bar.emoji, 70, y + 8);
+        // 标签
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#bbb';
+        ctx.fillText(bar.cn, 115, y + 8);
+        // 进度条背景
+        roundRect(ctx, 280, y - 8, 350, 24, 12);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fill();
+        // 进度条填充（使用百分制映射，bar.pct是0-100）
+        const barWidth = Math.max(Math.round((bar.pct / 100) * 350), 8);
+        roundRect(ctx, 280, y - 8, barWidth, 24, 12);
+        ctx.fillStyle = bar.color;
+        ctx.fill();
+        // 数值
+        ctx.fillStyle = '#888';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${bar.val}pt`, 720, y + 8);
+    });
+
+    // AI诊断区背景
+    roundRect(ctx, 40, 940, 720, 140, 20);
+    ctx.fillStyle = 'rgba(26,26,58,0.9)';
+    ctx.fill();
+
+    // AI诊断标题
+    ctx.fillStyle = '#888';
+    ctx.font = '18px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('🧠 AI 诊断报告', 70, 975);
+
+    // 诊断内容
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#eee';
+    ctx.fillText(result.diagnosis, 70, 1010, 660);
+
+    // 底部
+    ctx.fillStyle = '#6c5ce7';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('@EasternMysteryBot · #SBTI2026 #疯狂指数', 400, 1140);
+    ctx.fillStyle = '#444';
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Powered by 玄学大师 × SBTI 2026', 400, 1170);
+
+    // 下载
+    const link = document.createElement('a');
+    link.download = `SBTI_${name}_2026.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    if (tg) tg.HapticFeedback.impactOccurred('medium');
+}
+
+// 圆角矩形辅助
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// ── 分享结果 ────────────────────────────────────
+async function shareResult() {
+    const name = user?.first_name || '测试者';
+    const result = window.SBTIData?.buildResult(name, scores);
+    if (!result) {
+        if (tg) tg.showAlert('结果数据未找到，请重试');
+        return;
+    }
+
+    // 先确保结果页可见
+    const resultPage = document.getElementById('result');
+    const resultCard = resultPage?.querySelector('.result-card');
+    if (!resultCard) {
+        if (tg) tg.showAlert('结果页面未找到');
+        return;
+    }
+
+    if (tg) tg.HapticFeedback.impactOccurred('light');
+
+    try {
+        const canvas = await html2canvas(resultCard, {
+            backgroundColor: '#0a0a1a',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            allowTaint: true,
+            foreignObjectRendering: false,
+        });
+
+        const dataUrl = canvas.toDataURL('image/png');
+
+        if (tg && navigator.share) {
+            // 尝试带图片分享
             try {
-                const response = await fetch('/api/questions');
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('获取题目失败:', error);
-                return null;
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], `SBTI_${name}_2026.png`, { type: 'image/png' });
+                await navigator.share({
+                    files: [file],
+                    text: `🧬 SBTI 2026 疯狂指数测试\n\n👤 ${name} 的专属档案\n\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji}\n\n🧠 ${result.diagnosis}\n\n#SBTI2026 #疯狂指数`,
+                });
+                return;
+            } catch {
+                // 文件分享不支持，降级为纯文字
             }
-        },
-
-        async submitAnswers(answers) {
+            // 纯文字分享
             try {
-                const response = await fetch('/api/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ answers })
+                await navigator.share({
+                    text: `🧬 SBTI 2026 疯狂指数测试\n\n👤 ${name} 的专属档案\n\n🏷️ 【${result.titleCn}】${result.dimInfo.emoji} ${result.dimInfo.cn}\n\n🧠 ${result.diagnosis}\n\n#SBTI2026 #疯狂指数`,
                 });
-                const data = await response.json();
-                return data;
-            } catch (error) {
-                console.error('提交答案失败:', error);
-                return null;
+                return;
+            } catch (e) {
+                // 用户取消或不支持，走下载
             }
         }
-    };
 
-    const UI = {
-        showLoading(text = 'AI分析中...') {
-            const overlay = document.getElementById('loading-overlay');
-            overlay.querySelector('p').textContent = text;
-            overlay.classList.add('active');
-        },
+        // 降级：下载图片
+        const link = document.createElement('a');
+        link.download = `SBTI_${name}_2026.png`;
+        link.href = dataUrl;
+        link.click();
+        if (tg) tg.HapticFeedback.impactOccurred('medium');
 
-        hideLoading() {
-            document.getElementById('loading-overlay').classList.remove('active');
-        },
-
-        showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(screen => {
-                screen.classList.remove('active');
-            });
-            document.getElementById(screenId).classList.add('active');
-        },
-
-        updateProgress() {
-            const progress = ((AppState.currentQuestion + 1) / AppState.totalQuestions) * 100;
-            document.getElementById('progress-fill').style.width = progress + '%';
-            document.getElementById('current-q').textContent = AppState.currentQuestion + 1;
-        },
-
-        renderQuestion(question) {
-            const questionText = document.getElementById('question-text');
-            const optionsContainer = document.getElementById('options');
-            
-            questionText.textContent = question.question;
-            optionsContainer.innerHTML = '';
-
-            question.options.forEach((option, index) => {
-                const optionEl = document.createElement('div');
-                optionEl.className = 'option';
-                optionEl.dataset.key = option.key;
-                optionEl.textContent = option.text;
-                
-                optionEl.addEventListener('click', () => this.selectOption(optionEl, option.key));
-                optionsContainer.appendChild(optionEl);
-            });
-
-            // 更新按钮状态
-            document.getElementById('prev-btn').disabled = AppState.currentQuestion === 0;
-            document.getElementById('next-btn').disabled = !AppState.answers[AppState.currentQuestion];
-        },
-
-        selectOption(element, key) {
-            // 移除其他选中状态
-            document.querySelectorAll('.option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            element.classList.add('selected');
-            AppState.answers[AppState.currentQuestion] = key;
-            document.getElementById('next-btn').disabled = false;
-        },
-
-        async goToQuestion(index) {
-            AppState.currentQuestion = index;
-            this.updateProgress();
-
-            const data = await API.getQuestions();
-            if (data && data.questions) {
-                AppState.totalQuestions = data.questions.length;
-                document.getElementById('total-q').textContent = AppState.totalQuestions;
-                this.renderQuestion(data.questions[AppState.currentQuestion]);
-            }
-        },
-
-        async submitTest() {
-            this.showLoading();
-            
-            const result = await API.submitAnswers(AppState.answers);
-            
-            this.hideLoading();
-
-            if (result && result.success && result.result) {
-                AppState.result = result.result;
-                this.showResult(result.result);
-            } else {
-                alert('提交失败，请重试');
-            }
-        },
-
-        showResult(result) {
-            document.getElementById('mbti-type').textContent = result.type;
-            
-            // 显示人格描述
-            const descriptions = {
-                'INTJ': { name: '建筑师', desc: '你是一个独立思考者，善于战略规划，拥有强大的分析能力和创造力。你喜欢解决复杂的问题，追求知识和效率。' },
-                'INTP': { name: '思想家', desc: '你是一个深刻的思想家，对知识和理论充满好奇。你善于分析，喜欢独立工作，追求完美的逻辑和理解。' },
-                'ENTJ': { name: '指挥官', desc: '你是一个天生的领导者，果断、自信、有战略眼光。你喜欢挑战，追求效率和成果，善于组织团队达成目标。' },
-                'ENTP': { name: '辩论家', desc: '你是一个充满创意的思想家，好奇心强，思维敏捷。你喜欢辩论和探索新想法，善于发现机会和可能性。' },
-                'INFJ': { name: '提倡者', desc: '你是一个理想主义者，有着深刻的洞察力和同理心。你追求意义和价值，善于帮助他人实现潜能。' },
-                'INFP': { name: '调停者', desc: '你是一个理想主义者，善良、忠诚、有创造力。你重视内心的价值观，追求自我实现和帮助他人。' },
-                'ENFJ': { name: '主人公', desc: '你是一个热情的领导者和激励者，有强烈的沟通能力。你善于启发他人，追求团队和谐与共同成长。' },
-                'ENFP': { name: '竞选者', desc: '你是一个充满热情和创意的自由灵魂，好奇心强，乐观积极。你善于激励他人，享受探索新的可能性。' },
-                'ISTJ': { name: '物流师', desc: '你是一个可靠、务实的人，重视责任和诚信。你做事有条理，注重细节，善于执行和完成目标。' },
-                'ISFJ': { name: '守护者', desc: '你是一个忠诚、温暖的人，重视传统和责任。你善于照顾他人，默默奉献，是可靠的伙伴。' },
-                'ESTJ': { name: '总经理', desc: '你是一个务实、高效的领导者，重视秩序和成果。你善于组织和管理，决策果断，执行力强。' },
-                'ESFJ': { name: '执政官', desc: '你是一个热情、友善的人，重视和谐与合作。你善于照顾他人，社交能力强，是团队中的粘合剂。' },
-                'ISTP': { name: '大师', desc: '你是一个灵活、实际的问题解决者，善于动手操作。你喜欢探索事物的原理，独立而专注。' },
-                'ISFP': { name: '探险家', desc: '你是一个温柔、敏感的艺术者，热爱自由和美。你善于发现生活的美好，行动力强，喜欢体验新事物。' },
-                'ESTP': { name: '企业家', desc: '你是一个充满活力和行动力的人，喜欢冒险和挑战。你善于把握机会，反应敏捷，享受当下。' },
-                'ESFP': { name: '表演者', desc: '你是一个充满活力和热情的人，热爱社交和娱乐。你善于活跃气氛，享受生活，是大家的开心果。' }
-            };
-
-            const typeDesc = descriptions[result.type] || { name: '未知', desc: '等待探索' };
-            document.getElementById('type-description').innerHTML = `
-                <strong>${typeDesc.name}</strong><br>
-                ${typeDesc.desc}
-            `;
-
-            // 显示维度分数
-            const dimensions = document.getElementById('dimensions');
-            dimensions.innerHTML = `
-                <div class="dimension-item">
-                    <div class="dimension-name">外向-内向</div>
-                    <div class="dimension-value">${result.scores.E >= result.scores.I ? 'E ' + Math.round(result.scores.E) : 'I ' + Math.round(result.scores.I)}</div>
-                </div>
-                <div class="dimension-item">
-                    <div class="dimension-name">实感-直觉</div>
-                    <div class="dimension-value">${result.scores.S >= result.scores.N ? 'S ' + Math.round(result.scores.S) : 'N ' + Math.round(result.scores.N)}</div>
-                </div>
-                <div class="dimension-item">
-                    <div class="dimension-name">思考-情感</div>
-                    <div class="dimension-value">${result.scores.T >= result.scores.F ? 'T ' + Math.round(result.scores.T) : 'F ' + Math.round(result.scores.F)}</div>
-                </div>
-                <div class="dimension-item">
-                    <div class="dimension-name">判断-知觉</div>
-                    <div class="dimension-value">${result.scores.J >= result.scores.P ? 'J ' + Math.round(result.scores.J) : 'P ' + Math.round(result.scores.P)}</div>
-                </div>
-            `;
-
-            this.showScreen('result-screen');
-        },
-
-        shareResult() {
-            if (!AppState.result || !tg) return;
-            
-            const shareText = `🔮 SBTI性格测试\n\n我的性格类型：${AppState.result.type}\n\n快来测试你的性格吧！`;
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(shareText).then(() => {
-                    alert('结果已复制到剪贴板！');
-                });
-            }
-        },
-
-        restart() {
-            AppState.currentQuestion = 0;
-            AppState.answers = [];
-            AppState.result = null;
-            this.showScreen('welcome-screen');
-        }
-    };
-
-    function bindEvents() {
-        document.getElementById('start-btn').addEventListener('click', () => {
-            UI.showScreen('test-screen');
-            UI.goToQuestion(0);
-        });
-
-        document.getElementById('next-btn').addEventListener('click', async () => {
-            if (AppState.currentQuestion < AppState.totalQuestions - 1) {
-                AppState.currentQuestion++;
-                UI.updateProgress();
-                
-                const data = await API.getQuestions();
-                if (data && data.questions) {
-                    UI.renderQuestion(data.questions[AppState.currentQuestion]);
-                }
-            } else {
-                UI.submitTest();
-            }
-        });
-
-        document.getElementById('prev-btn').addEventListener('click', async () => {
-            if (AppState.currentQuestion > 0) {
-                AppState.currentQuestion--;
-                UI.updateProgress();
-                
-                const data = await API.getQuestions();
-                if (data && data.questions) {
-                    UI.renderQuestion(data.questions[AppState.currentQuestion]);
-                    
-                    // 恢复之前的答案
-                    const savedAnswer = AppState.answers[AppState.currentQuestion];
-                    if (savedAnswer) {
-                        const optionEl = document.querySelector(`.option[data-key="${savedAnswer}"]`);
-                        if (optionEl) {
-                            document.querySelectorAll('.option').forEach(opt => opt.classList.remove('selected'));
-                            optionEl.classList.add('selected');
-                        }
-                    }
-                }
-            }
-        });
-
-        document.getElementById('share-btn').addEventListener('click', () => UI.shareResult());
-        document.getElementById('restart-btn').addEventListener('click', () => UI.restart());
+    } catch (e) {
+        console.error('shareResult error:', e);
+        if (tg) tg.showAlert('截图失败，请检查网络后重试');
     }
+}
 
-    async function init() {
-        initTelegram();
-        bindEvents();
-        
-        const data = await API.getQuestions();
-        if (data && data.questions) {
-            AppState.totalQuestions = data.questions.length;
-            document.getElementById('total-q').textContent = AppState.totalQuestions;
-        }
+// ── 更新 Bot 按钮 ───────────────────────────────
+function updateBotButton() {
+    if (tg && tg.MainButton) {
+        tg.MainButton.setText('返回玄学大师Bot');
+        tg.MainButton.onClick(() => {
+            window.location.href = `https://t.me/${tg.initDataUnsafe?.bot?.username || 'EasternMysteryBot'}`;
+        });
+        tg.MainButton.show();
     }
-
-    document.addEventListener('DOMContentLoaded', init);
-
-})();
+}
