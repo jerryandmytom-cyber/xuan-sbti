@@ -335,94 +335,24 @@ async function shareResult() {
         if (tg) tg.showAlert('结果数据未找到，请重试');
         return;
     }
-
-    const resultPage = document.getElementById('result');
-    const resultCard = resultPage?.querySelector('.result-card');
-    if (!resultCard) {
-        if (tg) tg.showAlert('结果页面未找到');
-        return;
-    }
-
+    
     if (tg) tg.HapticFeedback.impactOccurred('light');
-
+    
     try {
-        // 等待上一帧渲染完成
-        await new Promise(r => setTimeout(r, 100));
-
-        const canvas = await html2canvas(resultCard, {
-            backgroundColor: '#0a0a1a',
-            scale: 1,
-            useCORS: true,
-            logging: false,
-            allowTaint: false,
-            foreignObjectRendering: false,
-            onclone: (clonedDoc) => {
-                // 确保动画已完成
-                const fills = clonedDoc.querySelectorAll('.score-bar-fill');
-                fills.forEach(f => {
-                    f.style.transition = 'none';
-                    f.style.animation = 'none';
-                    // 直接设置最终宽度
-                    const track = f.parentElement;
-                    if (track) {
-                        const trackW = track.offsetWidth;
-                        const w = parseFloat(f.style.width) || '0%';
-                        f.style.width = w;
-                    }
-                });
-            }
-        });
-
-        const dataUrl = canvas.toDataURL('image/png');
-        const totalScore = result.bars.reduce((s, b) => s + b.val, 0);
-        const hashTag = '#2026SBTI 个性测试';
-        const botRef = '请到TG @EasternMysteryBot';
-        const shareText = `${hashTag} ${botRef}\n\n👤 ${name} 的专属档案\n🏷️ 【${result.labelCn}】\n📊 六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)\n\n🧠 ${result.aiReport.split('\n').slice(0,5).join('\n')}`;
-
-        // 优先：先发文字到 TG 分享链接，再附上图片
-        if (tg) {
-            // 构造 TG 分享链接（带文字）
-            const encodedText = encodeURIComponent(`${hashTag} ${botRef}`);
-            const tgShareUrl = `https://t.me/EasternMysteryBot?text=${encodedText}`;
-
-            try {
-                const blob = await (await fetch(dataUrl)).blob();
-                const file = new File([blob], `SBTI_${name}_2026.png`, { type: 'image/png' });
-
-                // 尝试同时分享文字+图片
-                await navigator.share({ files: [file], text: shareText });
-                return;
-            } catch (e) {
-                // 图片+文字不被支持 → 打开 TG 分享链接让用户粘贴文字，同时下载图片
-                const link = document.createElement('a');
-                link.download = `SBTI_${name}_2026.png`;
-                link.href = dataUrl;
-                link.click();
-
-                // 打开 TG 分享链接（用户可在 TG 里粘贴文字）
-                setTimeout(() => {
-                    window.open(tgShareUrl, '_blank');
-                }, 300);
-                if (tg) tg.HapticFeedback.impactOccurred('medium');
-                return;
-            }
-        }
-
-        // 无 Telegram 环境：下载图片
+        // 使用 drawResultToCanvas 生成图片（更可靠）
+        const dataUrl = drawResultToCanvas(name, result);
+        
+        // 直接下载图片
         const link = document.createElement('a');
         link.download = `SBTI_${name}_2026.png`;
         link.href = dataUrl;
         link.click();
-
+        
+        if (tg) tg.showAlert('图片已保存，请长按图片分享到Telegram');
+        
     } catch (e) {
         console.error('shareResult error:', e);
-        // 尝试使用 canvas 2D 绘制备选
-        try {
-            drawResultToCanvas(name, result);
-        } catch (e2) {
-            console.error('Canvas fallback error:', e2);
-            if (tg) tg.showAlert('截图失败，请检查网络后重试');
-        }
+        if (tg) tg.showAlert('分享失败，请检查网络后重试');
     }
 }
 
