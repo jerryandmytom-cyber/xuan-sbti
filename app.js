@@ -101,7 +101,7 @@ function selectOption(idx) {
     // 累加得分
     if (opt.score) {
         for (const [dim, pts] of Object.entries(opt.score)) {
-            scores[dim] = (scores[dim] || 0) + pts;
+            scores[dim] = Math.min(10, (scores[dim] || 0) + pts);
         }
     }
 

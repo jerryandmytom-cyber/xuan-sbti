@@ -2581,10 +2581,10 @@ def sbti_process_answer(uid: str, answer_idx: int) -> tuple:
     if answer_idx < 0 or answer_idx >= len(options):
         return False, "⚠️ 无效选项，请重新选择", [opt['text'] for opt in options]
 
-    # 累加得分
+    # 累加得分（每维度最高10分）
     chosen = options[answer_idx]
     for dim, pts in chosen.get('score', {}).items():
-        ctx['scores'][dim] = ctx['scores'].get(dim, 0) + pts
+        ctx['scores'][dim] = min(10, ctx['scores'].get(dim, 0) + pts)
 
     ctx['step'] += 1
     ctx['ts'] = time.time()
