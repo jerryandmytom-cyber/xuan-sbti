@@ -328,6 +328,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // ── 分享结果 ────────────────────────────────────
+// ── 分享结果 ────────────────────────────────────
 async function shareResult() {
     const name = user?.first_name || '测试者';
     const result = window.SBTIData?.buildResult(name, scores);
@@ -335,33 +336,79 @@ async function shareResult() {
         if (tg) tg.showAlert('结果数据未找到，请重试');
         return;
     }
-    
+
+    const resultPage = document.getElementById('result');
+    const resultCard = resultPage?.querySelector('.result-card');
+    if (!resultCard) {
+        if (tg) tg.showAlert('结果页面未找到');
+        return;
+    }
+
     if (tg) tg.HapticFeedback.impactOccurred('light');
-    
+
     try {
-        // 生成图片
-        const dataUrl = drawResultToCanvas(name, result);
-        
-        // 创建预览模态框
-        const modal = document.createElement('div');
-        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
-        modal.innerHTML = `
-            <div style="color:#fff;font-size:18px;margin-bottom:16px;text-align:center;">
-                🖼️ 图片预览<br><span style="font-size:14px;color:#888;">长按图片保存或分享</span>
-            </div>
-            <img src="${dataUrl}" style="max-width:100%;max-height:70vh;border-radius:12px;border:2px solid #6c5ce7;" />
-            <div style="color:#888;font-size:14px;margin-top:16px;text-align:center;">
-                图片已生成<br>请长按图片保存到相册后分享
-            </div>
-            <button onclick="this.parentElement.remove()" style="margin-top:20px;padding:12px 32px;background:#6c5ce7;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;">
-                关闭
-            </button>
-        `;
-        document.body.appendChild(modal);
-        
+        // 等待动画完成
+        await new Promise(r => setTimeout(r, 300));
+
+        const canvas = await html2canvas(resultCard, {
+            backgroundColor: '#0a0a1a',
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            allowTaint: true,
+            foreignObjectRendering: false,
+            onclone: (clonedDoc) => {
+                const fills = clonedDoc.querySelectorAll('.score-bar-fill');
+                fills.forEach(f => {
+                    f.style.transition = 'none';
+                    f.style.animation = 'none';
+                    const w = f.style.width;
+                    f.style.width = w;
+                });
+            }
+        });
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const shareText = `#SBTI2026 六维人格测试
+
+👤 ${name} 的专属档案
+🏷️ 【${result.labelCn}】
+📊 六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)
+${result.madnessEmoji} ${result.madnessLevel}
+
+🧠 AI诊断报告
+${result.aiReport.split('\n').slice(0,3).join('\n')}`;
+
+        if (tg) {
+            const encodedText = encodeURIComponent(shareText);
+            const tgShareUrl = `https://t.me/share/url?url=https://xuan-miniapp-sbti.onrender.com&text=${encodedText}`;
+
+            try {
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], `SBTI_${name}_2026.png`, { type: 'image/png' });
+                await navigator.share({ files: [file], text: shareText });
+                return;
+            } catch (e) {
+                // 不支持分享 → 下载图片 + 打开TG链接
+                const link = document.createElement('a');
+                link.download = `SBTI_${name}_2026.png`;
+                link.href = dataUrl;
+                link.click();
+                setTimeout(() => window.open(tgShareUrl, '_blank'), 300);
+                if (tg) tg.HapticFeedback.impactOccurred('medium');
+                return;
+            }
+        }
+
+        // 无TG环境：下载图片
+        const link = document.createElement('a');
+        link.download = `SBTI_${name}_2026.png`;
+        link.href = dataUrl;
+        link.click();
+
     } catch (e) {
         console.error('shareResult error:', e);
-        if (tg) tg.showAlert('分享失败，请检查网络后重试');
+        if (tg) tg.showAlert('分享失败，请稍后重试');
     }
 }
 
