@@ -1,0 +1,19 @@
+# ===========================================================
+# Render Web Service - SBTI Mini App (Node.js)
+# ===========================================================
+# 用于SBTI性格测试纯前端应用
+
+services:
+  - type: web
+    name: sbti-miniapp
+    env: node
+    region: singapore
+    plan: free
+    
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
