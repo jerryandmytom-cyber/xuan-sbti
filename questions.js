@@ -1,5 +1,5 @@
 /**
- * SBTI 2026 题库（15题，随机抽取6题）
+ * SBTI 2026 题库（28道，随机抽取6题）
  * 与 xuanvip_SBTI.py 保持同步
  */
 
@@ -203,6 +203,136 @@ const ALL_QUESTIONS = [
             { text: '有点不爽，但懒得计较 😑', score: { apathy: 10 } },
             { text: '直接当面质问，你在搞什么？🔥', score: { ego: 10 } },
             { text: '觉得好笑，甚至想教TA几招 🧑‍🏫', score: { vibe: 10 } },
+        ]
+    },
+    {
+        id: 16,
+        text: '朋友晒了一张精修自拍，你会？',
+        options: [
+            { text: '认真夸赞，分析哪里修得好 📸', score: { vibe: 10 } },
+            { text: '怀疑是不是同一个人，不敢认 🙈', score: { ego: 8, chaos: 2 } },
+            { text: '点个赞划走，不想多看 👆', score: { apathy: 10 } },
+            { text: '思考自己下次拍照怎么构图 🤳', score: { grind: 8, ego: 2 } },
+        ]
+    },
+    {
+        id: 17,
+        text: '你写朋友圈的频率是？',
+        options: [
+            { text: '有主题系列更新，定期营业 📅', score: { lore: 10 } },
+            { text: '想发就发，不考虑数据反馈 📝', score: { chaos: 10 } },
+            { text: '一年不超过5条，珍惜羽毛 🪶', score: { apathy: 10 } },
+            { text: '每次发完都会看阅读量 📊', score: { grind: 10 } },
+        ]
+    },
+    {
+        id: 18,
+        text: '遇到选择困难时，你一般会？',
+        options: [
+            { text: '列个Excel表格分析利弊 🧮', score: { grind: 10 } },
+            { text: '让别人替自己选，反正后果一起扛 🤝', score: { apathy: 10 } },
+            { text: '掷骰子或抛硬币，让命运决定 🎲', score: { chaos: 10 } },
+            { text: '跟着感觉走，感觉对了就是对了 ✨', score: { vibe: 10 } },
+        ]
+    },
+    {
+        id: 19,
+        text: '你参加聚会的目的是？',
+        options: [
+            { text: '认识新人，扩展社交网络 🌐', score: { ego: 8, grind: 2 } },
+            { text: '和老朋友叙旧，珍惜老伙计 👯', score: { lore: 8, vibe: 2 } },
+            { text: '为了吃顿好的，仅此而已 🍖', score: { apathy: 10 } },
+            { text: '万一遇到有趣的人呢，随缘 🚶', score: { chaos: 10 } },
+        ]
+    },
+    {
+        id: 20,
+        text: '你给自己贴的标签是？',
+        options: [
+            { text: '这也不能，那也不能，反正不是普通人 🚫', score: { ego: 10 } },
+            { text: '没有标签，我就是一个没有标签的人 🏷️', score: { lore: 8, ego: 2 } },
+            { text: '随心情切换，每天不一样 🌈', score: { chaos: 10 } },
+            { text: '专注搞钱，其他都是浮云 💰', score: { grind: 10 } },
+        ]
+    },
+    {
+        id: 21,
+        text: '你通常怎么应对负面情绪？',
+        options: [
+            { text: '写长文发在只有自己可见的地方 📝', score: { lore: 10 } },
+            { text: '找人倾诉，一定要把情绪倒干净 🗣️', score: { vibe: 10 } },
+            { text: '刷短视频逃避，等它自己消失 🌀', score: { apathy: 10 } },
+            { text: '跑步或健身，物理消化情绪 🏃', score: { grind: 10 } },
+        ]
+    },
+    {
+        id: 22,
+        text: '你更愿意成为哪种关系的中心？',
+        options: [
+            { text: '朋友圈的信息枢纽，谁的事都知道 🕸️', score: { vibe: 10 } },
+            { text: '家人离不开的那种，无可替代 🏠', score: { lore: 8, grind: 2 } },
+            { text: '工作群的红人，有事第一个想到 👑', score: { ego: 10 } },
+            { text: '小圈子的灵魂人物，质量大于数量 🎭', score: { ego: 8, lore: 2 } },
+        ]
+    },
+    {
+        id: 23,
+        text: '当有人说「你怎么变了」，你的反应是？',
+        options: [
+            { text: '我就是变了，你跟得上吗 😎', score: { ego: 10 } },
+            { text: '变？我一直是这样啊 🤨', score: { lore: 8, vibe: 2 } },
+            { text: '没变啊，你的感觉不准 👀', score: { apathy: 10 } },
+            { text: '可能吧，但我不在乎别人怎么说 🤷', score: { chaos: 8, ego: 2 } },
+        ]
+    },
+    {
+        id: 24,
+        text: '你更享受哪种独处方式？',
+        options: [
+            { text: '关掉手机，躺尸到天荒地老 🛋️', score: { apathy: 10 } },
+            { text: '学习新技能，让时间更有价值 📚', score: { grind: 10 } },
+            { text: '整理回忆，编排自己的人生剧本 📖', score: { lore: 10 } },
+            { text: '发呆幻想，脑内剧场无限精彩 🎬', score: { ego: 8, chaos: 2 } },
+        ]
+    },
+    {
+        id: 25,
+        text: '你如何看待「躺平」这个词？',
+        options: [
+            { text: '我的终极人生哲学，非常认同 🛌', score: { apathy: 10 } },
+            { text: '不过是自嘲罢了，该卷还是卷 💪', score: { grind: 10 } },
+            { text: '躺不平的，你看房贷答应吗 🏦', score: { vibe: 8, grind: 2 } },
+            { text: '一种人设标签，适合某些场合 🎪', score: { lore: 10 } },
+        ]
+    },
+    {
+        id: 26,
+        text: '你的工作风格更接近？',
+        options: [
+            { text: 'Deadline是第一生产力，拖到最后一秒 ⏰', score: { chaos: 10 } },
+            { text: '提前规划，任务分解，日清日结 📋', score: { grind: 10 } },
+            { text: '看心情，心情好效率高，心情差摆烂 🌊', score: { apathy: 10 } },
+            { text: '让老板满意是核心，其他都是浮云 👔', score: { ego: 10 } },
+        ]
+    },
+    {
+        id: 27,
+        text: '你如何处理好友列表里的人？',
+        options: [
+            { text: '定期清理，不适合就删，社交要断舍离 🧹', score: { ego: 10 } },
+            { text: '从来不删，万一哪天需要呢 📋', score: { grind: 8, apathy: 2 } },
+            { text: '分组管理，不同的人给不同的权限 🔐', score: { lore: 10 } },
+            { text: '根本不在乎列表，反正也不怎么聊天 💬', score: { apathy: 10 } },
+        ]
+    },
+    {
+        id: 28,
+        text: '你对自己未来的期待是？',
+        options: [
+            { text: '财务自由，提前退休，周游世界 🌍', score: { grind: 10 } },
+            { text: '成为一个传说，有故事可以说 📖', score: { ego: 8, lore: 2 } },
+            { text: '活在当下，想那么远干嘛 🦋', score: { chaos: 10 } },
+            { text: '找到几个知心人，岁月静好 🌙', score: { vibe: 10 } },
         ]
     },
 ];
