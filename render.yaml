@@ -1,15 +1,23 @@
-{
-  "name": "玄VIP Telegram Mini App",
-  "description": "SBTI性格测试与玄学解读",
-  "repository": "https://github.com/myworld998866/xuanvip-miniapp",
-  "buildCommand": "npm install",
-  "startCommand": "npm start",
-  "envVars": {
-    "NODE_ENV": {
-      "value": "production"
-    }
-  },
-  "healthCheckPath": "/",
-  "region": "singapore",
-  "plan": "free"
-}
+# ===========================================================
+# Render Web Service - 八字算命Bot
+# ===========================================================
+# 用于八字算命、姻缘测算、紫微斗数等玄学服务
+
+services:
+  - type: web
+    name: xuanvip-bot
+    env: python
+    region: singapore
+    plan: free
+    
+    buildCommand: pip install -r requirements.txt
+    startCommand: python new/bot_startup.py
+    healthCheckPath: /health
+    
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: PORT
+        value: "8443"
+      - key: RENDER
+        value: "true"

@@ -1,0 +1,48 @@
+# ===========================================================
+# Render Blueprint - 八字算命Bot (Python)
+# ===========================================================
+# 用于八字算命、姻缘测算、姻缘测算等玄学服务
+
+services:
+  # ── 八字算命Bot ─────────────────────────────────────
+  - type: web
+    name: xuanvip-bot
+    env: python
+    region: singapore
+    plan: free
+    
+    # 仓库位置
+    repository: https://github.com/myworld998866/xuanvip-miniapp
+    
+    # 构建命令
+    buildCommand: pip install -r requirements.txt
+    
+    # 启动命令
+    startCommand: python new/bot_startup.py
+    
+    # 健康检查
+    healthCheckPath: /health
+    
+    # 环境变量
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: NODE_ENV
+        fromGroup: web
+      - key: RENDER
+        value: "true"
+    
+    # 根目录
+    rootDir: new
+
+  # ── SBTI Mini App (Node.js) ─────────────────────────
+  # 注意：Mini App需要通过另一个Web Service部署
+  # - type: web
+  #   name: sbti-miniapp
+  #   env: node
+  #   region: singapore
+  #   plan: free
+  #   repository: https://github.com/myworld998866/xuanvip-miniapp
+  #   buildCommand: npm install
+  #   startCommand: npm start
+  #   rootDir: .
