@@ -591,26 +591,16 @@ function getDimensions(scores) {
     };
 }
 
-// 基于完整六维分数生成动态AI诊断报告
-function buildDynamicAIReport(scores) {
+// 基于人格标签生成统一的AI诊断报告
+function buildAIReport(scores, labelCn) {
     const dims = getDimensions(scores);
     const { primary, primaryScore, secondary, secondaryScore } = dims;
     
-    // 计算所有维度的分数和分布特征
     const allScores = Object.values(scores).map(v => Math.round(v));
     const total = allScores.reduce((s, v) => s + v, 0);
-    const maxScore = Math.max(...allScores);
-    const minScore = Math.min(...allScores);
-    
-    // 按分数排序
     const sortedDims = Object.entries(scores)
         .map(([key, val]) => ({ key, val: Math.round(val) }))
         .sort((a, b) => b.val - a.val);
-    
-    // 分析分数分布模式
-    const highDims = sortedDims.filter(d => d.val >= 8);
-    const midDims = sortedDims.filter(d => d.val >= 4 && d.val < 8);
-    const lowDims = sortedDims.filter(d => d.val < 4);
     
     function cn(dim) { return SBTI_DIMS[dim]?.cn || dim; }
     function emoji(dim) { return SBTI_DIMS[dim]?.emoji || '❓'; }
@@ -622,43 +612,39 @@ function buildDynamicAIReport(scores) {
         return '极弱';
     }
     
-    // 模式1：六边形战士
-    if (allScores.every(s => s >= 7)) {
-        return `📊 【六边形全能战士】\n\n你的六维分数呈现惊人的均衡分布：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维测试中同时在所有维度都保持7分以上，这是极为罕见的「六边形战士」配置。你的心理特征是全方位发展，没有明显的短板。\n\n建议：你的超能力是「场景切换」，在不同场合调用不同特质。`;
+    const scoresLine = sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n');
+    
+    // 基于人格标签生成针对性诊断
+    if (labelCn.includes('冷眼旁观者')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。数据分析表明，你的「${cn(primary)}」和「${cn(secondary)}」是核心驱动力。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 保持距离，观察为主\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 辅助决策工具\n- 高躺平 + 适度自我 = 「精致旁观者」\n\n建议：你擅长在复杂社交中保持清醒，建议发挥这一优势。`;
     }
     
-    // 模式2：极致偏科
-    if (highDims.length === 1 && lowDims.length >= 4) {
-        const dim = highDims[0];
-        const lowNames = lowDims.map(d => cn(d.key)).join('、');
-        return `📊 【单维极致型人格】\n\n你的六维分布呈现明显的「单极突凸」模式：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你的「${cn(dim.key)}」维度得分${dim.val}分，远超其他维度。这意味你在该维度上有极强的心理倾向。\n\n建议：尝试在低分维度上寻找突破口，让自己多几个「备份技能」。`;
+    if (labelCn.includes('主角') || labelCn.includes('自我')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。你的行为以自我为核心驱动力。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 强烈的自我意识\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 社交策略辅助\n- 自我驱动 + 适当疯狂 = 「舞台主角」\n\n建议：善用主角光环影响周围，但注意不要过度自我。`;
     }
     
-    // 模式3：双重高峰
-    if (highDims.length === 2) {
-        const [d1, d2] = highDims;
-        return `📊 【双峰并立型人格】\n\n你的六维分布呈现「双峰并立」模式：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你在「${cn(d1.key)}」和「${cn(d2.key)}」两个维度上同时获得高分：\n- ${emoji(d1.key)} ${cn(d1.key)}：${d1.val}分\n- ${emoji(d2.key)} ${cn(d2.key)}：${d2.val}分\n\n这两个维度的组合形成你独特的人格光谱。\n\n建议：学会在两种模式间主动选择。`;
+    if (labelCn.includes('躺平') || labelCn.includes('佛系')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。能量守恒是你的核心原则。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 高效节能模式\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 辅助应对策略\n- 低消耗 + 适当输出 = 「战略性躺平」\n\n建议：躺平不是摆烂，是在等待合适的出击时机。`;
     }
     
-    // 模式4：全员佛系
-    if (total <= 15) {
-        return `📊 【超级佛系体】\n\n你的六维分数整体偏低：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维总分仅${total}分，所有维度都在3分以下。这是一种「超低能量」配置。\n\n建议：如果这是你的真实状态，那说明你是「躺平中的躺平」，精神内耗接近于零。`;
+    if (labelCn.includes('疯狂') || labelCn.includes('混沌')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。混乱是你的创造力来源。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 打破常规的原动力\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 失控边界控制\n- 高混乱 + 高能量 = 「气氛制造机」\n\n建议：你的发疯是有目的的发疯，关键时刻要能收回来。`;
     }
     
-    // 模式5：高低分明
-    if (maxScore >= 8 && minScore <= 2) {
-        const highNames = highDims.map(d => `${emoji(d.key)}${cn(d.key)}(${d.val}分)`).join('、');
-        const lowNames = lowDims.map(d => `${emoji(d.key)}${cn(d.key)}(${d.val}分)`).join('、');
-        return `📊 【强烈反差型人格】\n\n你的六维分布呈现极端分化：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n你的分数分布呈现明显的「两极分化」：\n- 高分区：${highNames}\n- 低分区：${lowNames}\n\n这种配置的内心冲突感极强。\n\n建议：接受自己的反差属性，这是你的独特魅力点。`;
+    if (labelCn.includes('卷王') || labelCn.includes('效率')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。效率是你的人生信仰。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 目标导向极强\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 成就辅助动力\n- 高卷王 + 适当自我 = 「精英制造机」\n\n建议：卷要有方向，避免无效内卷。适当躺平可以走更远。`;
     }
     
-    // 模式6：均衡中等型
-    if (allScores.every(s => s >= 3 && s <= 7)) {
-        return `📊 【均衡发展型人格】\n\n你的六维分布非常均衡：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI深度分析：\n\n六维分数全部在3-7分区间，呈现「标准正态」分布。\n\n建议：你是「万金油」型人格，适合需要综合能力的岗位。`;
+    if (labelCn.includes('氛围') || labelCn.includes('共情')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。你是天然的社交雷达。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 敏锐的感知力\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 社交润滑剂\n- 高氛围 + 高共情 = 「社交温度计」\n\n建议：你总能第一时间读懂空气，但别被他人的情绪绑架。`;
     }
     
-    // 默认模式
-    return `📊 【动态人格分析】\n\n你的六维分数分布：\n${sortedDims.map(d => `• ${emoji(d.key)} ${cn(d.key)}：${d.val}分（${level(d.val)}）`).join('\n')}\n\n🧠 AI分析总结：\n\n- 主特征：${emoji(primary)} ${cn(primary)} ${primaryScore}分（${level(primaryScore)}）\n- 次特征：${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分（${level(secondaryScore)}）\n- 六维总分：${total}分 / 60分\n- 综合评估：你的${level(primaryScore)}「${cn(primary)}」特质与${level(secondaryScore)}「${cn(secondary)}」特质共同构成你的人格基础。`;
+    if (labelCn.includes('人设') || labelCn.includes('角色')) {
+        return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。你是自我形象的艺术家。\n\n人格特征：\n- ${emoji(primary)} ${cn(primary)} ${primaryScore}分 → 精心维护的人设\n- ${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分 → 形象管理辅助\n- 高人设 + 适当疯狂 = 「反差萌制造者」\n\n建议：人设是你的一部分，但真实的你更有魅力。`;
+    }
+    
+    // 默认诊断
+    return `📊 【${labelCn}】人格分析\n\n六维分数分布：\n${scoresLine}\n\n🧠 AI诊断：\n\n你是典型的【${labelCn}】人格。\n\n核心特征：\n- 主维度：${emoji(primary)} ${cn(primary)} ${primaryScore}分\n- 次维度：${emoji(secondary)} ${cn(secondary)} ${secondaryScore}分\n- 六维总分：${total}分 / 60分\n\n建议：了解自己的优势领域，持续优化人格表现。`;
 }
 
 // 基于分数推导人格标签
@@ -750,7 +736,7 @@ function buildResult(name, scores) {
     const { labelCn, labelEn } = buildPersonalityLabel(primary, primaryScore, secondary, secondaryScore);
     
     // 生成动态AI诊断报告（基于完整分数分布）
-    const aiReport = buildDynamicAIReport(scores);
+    const aiReport = buildAIReport(scores, labelCn);
     
     const primaryInfo = SBTI_DIMS[primary];
     const secondaryInfo = SBTI_DIMS[secondary];

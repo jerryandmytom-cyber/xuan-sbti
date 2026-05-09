@@ -2169,34 +2169,21 @@ def sbti_get_dimensions(scores: dict) -> tuple:
     second = sorted_dims[1] if len(sorted_dims) > 1 else ('apathy', 0)
     return first[0], first[1], second[0], second[1]
 
-def sbti_build_dynamic_ai_report(scores: dict) -> str:
+
+def sbti_build_ai_report(scores: dict, label_cn: str) -> str:
     """
-    基于完整六维分数生成动态AI诊断报告
-    不同分数分布模式 → 不同的人格解读
+    基于六维分数和人格标签生成统一的AI诊断报告
+    AI诊断与人格标签保持一致
     """
     dims = sbti_get_dimensions(scores)
     primary, primary_score, secondary, secondary_score = dims
     
-    # 计算所有维度的分数和分布特征
     all_scores = list(scores.values())
     total = sum(all_scores)
-    max_score = max(all_scores)
-    min_score = min(all_scores)
-    avg_score = total / 6
-    
-    # 按分数排序
     sorted_dims = sorted(scores.items(), key=lambda x: x[1], reverse=True)
     
-    # 分析分数分布模式
-    high_dims = [d for d, s in sorted_dims if s >= 8]  # 8-10分
-    mid_dims = [d for d, s in sorted_dims if 4 <= s < 8]  # 4-7分
-    low_dims = [d for d, s in sorted_dims if s < 4]  # 0-3分
-    
-    # 获取维度中文名
     def cn(dim): return SBTI_DIMS[dim]['cn']
     def emoji(dim): return SBTI_DIMS[dim]['emoji']
-    
-    # 分数区间描述
     def level(s):
         if s >= 9: return "极强"
         elif s >= 7: return "较强"
@@ -2204,174 +2191,144 @@ def sbti_build_dynamic_ai_report(scores: dict) -> str:
         elif s >= 3: return "较弱"
         else: return "极弱"
     
-    # ═══════════════════════════════════════════════════════════
-    # 根据分数分布模式生成不同诊断
-    # ═══════════════════════════════════════════════════════════
+    # 基于人格标签生成针对性诊断
+    if '冷眼旁观者' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
+
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
+
+🧠 AI诊断：
+
+你是典型的【{label_cn}】人格。数据分析表明，你的「{cn(primary)}」和「{cn(secondary)}」是核心驱动力。
+
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 保持距离，观察为主
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 辅助决策工具
+- 高躺平 + 适度自我 = 「精致旁观者」
+
+建议：你擅长在复杂社交中保持清醒，建议发挥这一优势。"""
     
-    # 模式1：六边形战士（所有维度都高）
-    if all(s >= 7 for s in all_scores):
-        return f"""📊 【六边形全能战士】
+    elif '主角' in label_cn or '自我' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分数呈现惊人的均衡分布：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-六维测试中同时在所有维度都保持7分以上，这是极为罕见的「六边形战士」配置。你的心理特征是全方位发展，没有明显的短板。
+你是典型的【{label_cn}】人格。你的行为以自我为核心驱动力。
 
-具体表现：
-- 高躺平 = 深谙能量守恒，知道何时该躺
-- 高自我 = 清晰的自我认知和边界感
-- 高疯狂 = 在安全环境下释放创造力
-- 高卷王 = 强大的目标达成能力
-- 高氛围 = 出色的社交感知力
-- 高人设 = 稳定的自我形象管理
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 强烈的自我意识
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 社交策略辅助
+- 自我驱动 + 适当疯狂 = 「舞台主角」
 
-建议：你的超能力是「场景切换」，在不同场合调用不同特质。关键是根据场景权重调整你的主导维度。"""
+建议：善用主角光环影响周围，但注意不要过度自我。"""
     
-    # 模式2：极致偏科（只有一个维度特别高，其他都低）
-    if len(high_dims) == 1 and len(low_dims) >= 4:
-        dim = high_dims[0]
-        low_cn = '、'.join([cn(d) for d in low_dims])
-        return f"""📊 【单维极致型人格】
+    elif '躺平' in label_cn or '佛系' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分布呈现明显的「单极突凸」模式：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-你的「{cn(dim)}」维度得分{primary_score}分，远超其他维度。这意味你在该维度上有极强的心理倾向，而其他特质被压制。
+你是典型的【{label_cn}】人格。能量守恒是你的核心原则。
 
-特征解读：
-- {emoji(dim)} {cn(dim)} {primary_score}分 → 你的核心驱动力
-- 其他五维度平均 {(total - primary_score) / 5:.1f}分 → 被主导维度压制
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 高效节能模式
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 辅助应对策略
+- 低消耗 + 适当输出 = 「战略性躺平」
 
-这种人格的特点是「一根筋」，所有行为都围绕单一核心驱动。可能是天赋异禀，也可能是过度专注。
-
-建议：尝试在低分维度上寻找小突破口，让自己多几个「备份技能」。"""
+建议：躺平不是摆烂，是在等待合适的出击时机。"""
     
-    # 模式3：双重高峰（两个维度都很高）
-    if len(high_dims) == 2:
-        d1, d2 = high_dims
-        s1, s2 = scores[d1], scores[d2]
-        return f"""📊 【双峰并立型人格】
+    elif '疯狂' in label_cn or '混沌' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分布呈现「双峰并立」模式：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-你在「{cn(d1)}」和「{cn(d2)}」两个维度上同时获得高分：
-- {emoji(d1)} {cn(d1)}：{s1}分
-- {emoji(d2)} {cn(d2)}：{s2}分
+你是典型的【{label_cn}】人格。混乱是你的创造力来源。
 
-这两个维度的组合形成你独特的人格光谱。数据表明你的行为模式会在两种心理模式之间动态切换。
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 打破常规的原动力
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 失控边界控制
+- 高混乱 + 高能量 = 「气氛制造机」
 
-双峰特征：
-- 这种组合意味着你具有「双重人格切换」能力
-- 在不同场景下，可能激活不同的主导维度
-- 内心常有「两种声音」在拉扯
-
-建议：学会在两种模式间主动选择，而不是被动切换。"""
+建议：你的发疯是有目的的发疯，关键时刻要能收回来。"""
     
-    # 模式4：全员佛系（总分很低）
-    if total <= 15:
-        return f"""📊 【超级佛系体】
+    elif '卷王' in label_cn or '效率' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分数整体偏低：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
+🧠 AI诊断：
 
-🧠 AI深度分析：
+你是典型的【{label_cn}】人格。效率是你的人生信仰。
 
-六维总分仅{total}分，所有维度都在3分以下。这是一种「超低能量」配置，你在测试中展现出极强的「无欲无求」特质。
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 目标导向极强
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 成就辅助动力
+- 高卷王 + 适当自我 = 「精英制造机」
 
-可能的原因：
-1. 测试时过于佛系，选了最不积极的选项
-2. 本身就是低欲望人群，对大多数事情不感兴趣
-3. 对测试题目理解有偏差
-
-建议：如果这是你的真实状态，那说明你是「躺平中的躺平」，精神内耗接近于零。但也可能需要检查是否对生活失去了热情。"""
+建议：卷要有方向，避免无效内卷。适当躺平可以走更远。"""
     
-    # 模式5：高低分明（高分和低分对比强烈）
-    if max_score >= 8 and min_score <= 2:
-        high_cn = '、'.join([f'{emoji(d)}{cn(d)}({scores[d]}分)' for d in high_dims])
-        low_cn = '、'.join([f'{emoji(d)}{cn(d)}({scores[d]}分)' for d in low_dims])
-        return f"""📊 【强烈反差型人格】
+    elif '氛围' in label_cn or '共情' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分布呈现极端分化：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-你的分数分布呈现明显的「两极分化」：
-- 高分区：{high_cn}
-- 低分区：{low_cn}
+你是典型的【{label_cn}】人格。你是天然的社交雷达。
 
-这种配置的内心冲突感极强。你可能在「想卷又躺不平」的状态中反复横跳，或者在社交中时而高调时而低调。
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 敏锐的感知力
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 社交润滑剂
+- 高氛围 + 高共情 = 「社交温度计」
 
-反差特征：
-- 特定场景下会「变脸」
-- 容易被贴上「不稳定」标签
-- 实际上是「真实」的表现
-
-建议：接受自己的反差属性，这是你的独特魅力点。"""
+建议：你总能第一时间读懂空气，但别被他人的情绪绑架。"""
     
-    # 模式6：均衡中等型
-    if all(3 <= s <= 7 for s in all_scores):
-        return f"""📊 【均衡发展型人格】
+    elif '人设' in label_cn or '角色' in label_cn:
+        return f"""📊 【{label_cn}】人格分析
 
-你的六维分布非常均衡：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-六维分数全部在3-7分区间，呈现「标准正态」分布。没有特别突出的维度，也没有特别弱的短板。
+你是典型的【{label_cn}】人格。你是自我形象的艺术家。
 
-这种配置的优点：
-- 适应性极强，什么场景都能应付
-- 不会被贴上「极端」标签
-- 社交中给人「正常」的感觉
+人格特征：
+- {emoji(primary)} {cn(primary)} {{primary_score}}分 → 精心维护的人设
+- {emoji(secondary)} {cn(secondary)} {{secondary_score}}分 → 形象管理辅助
+- 高人设 + 适当疯狂 = 「反差萌制造者」
 
-缺点：
-- 缺乏明显特色
-- 可能被评价为「没个性」
-
-建议：你是「万金油」型人格，适合需要综合能力的岗位。但如果你想脱颖而出，需要刻意培养一个差异化维度。"""
+建议：人设是你的一部分，但真实的你更有魅力。"""
     
-    # 模式7：疯狂主导型
-    if primary_score >= 8 and secondary_score >= 5:
-        return f"""📊 【{level(primary_score)}主导型人格】
+    # 默认诊断
+    return f"""📊 【{label_cn}】人格分析
 
-你的主维度「{cn(primary)}」得分{primary_score}分，次维度「{cn(secondary)}」{secondary_score}分：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+六维分数分布：
+{chr(10).join(f'• {emoji(d)} {cn(d)}：{{s}}分（{{level(s)}}）' for d, s in sorted_dims)}
 
-🧠 AI深度分析：
+🧠 AI诊断：
 
-你的核心驱动力是「{cn(primary)}」（{primary_score}分），次要特征是「{cn(secondary)}」（{secondary_score}分）。
+你是典型的【{label_cn}】人格。
 
-人格画像：
-- 主维度{level(primary_score)}：{emoji(primary)} {cn(primary)}是决定你行为的主要因素
-- 次维度{level(secondary_score)}：{emoji(secondary)} {cn(secondary)}提供辅助驱动力
-- 这种组合意味着你在{cn(primary)}情境下会优先激活{cn(secondary)}作为应对策略
+核心特征：
+- 主维度：{emoji(primary)} {cn(primary)} {{primary_score}}分
+- 次维度：{emoji(secondary)} {cn(secondary)} {{secondary_score}}分
+- 六维总分：{{total}}分 / 60分
 
-建议：强化你的主维度优势，同时关注次维度的成长空间。"""
-    
-    # 默认模式：一般分析
-    return f"""📊 【动态人格分析】
-
-你的六维分数分布：
-{chr(10).join(f'• {emoji(d)} {cn(d)}：{s}分（{level(s)}）' for d, s in sorted_dims)}
+建议：了解自己的优势领域，持续优化人格表现。"""
 
 
-🧠 AI分析总结：
-
-- 主特征：{emoji(primary)} {cn(primary)} {primary_score}分（{level(primary_score)}）
-- 次特征：{emoji(secondary)} {cn(secondary)} {secondary_score}分（{level(secondary_score)}）
-- 六维总分：{total}分 / 60分
-- 综合评估：你的{int(level(primary_score))}「{cn(primary)}」特质与{int(level(secondary_score))}「{cn(secondary)}」特质共同构成你的人格基础。
-
-建议：根据实际场景灵活调用不同维度的心理资源。"""
 
 
 def sbti_build_personality_label(primary: str, primary_score: int, secondary: str, secondary_score: int) -> tuple:
@@ -2522,7 +2479,7 @@ def sbti_build_result_card(name: str, scores: dict) -> str:
     )
     
     # 生成动态AI诊断报告（基于完整分数分布）
-    ai_report = sbti_build_dynamic_ai_report(scores)
+    ai_report = sbti_build_ai_report(scores, label_cn)
     
     primary_info = SBTI_DIMS[primary]
     secondary_info = SBTI_DIMS[secondary]
