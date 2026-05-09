@@ -339,16 +339,25 @@ async function shareResult() {
     if (tg) tg.HapticFeedback.impactOccurred('light');
     
     try {
-        // 使用 drawResultToCanvas 生成图片（更可靠）
+        // 生成图片
         const dataUrl = drawResultToCanvas(name, result);
         
-        // 直接下载图片
-        const link = document.createElement('a');
-        link.download = `SBTI_${name}_2026.png`;
-        link.href = dataUrl;
-        link.click();
-        
-        if (tg) tg.showAlert('图片已保存，请长按图片分享到Telegram');
+        // 创建预览模态框
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+        modal.innerHTML = `
+            <div style="color:#fff;font-size:18px;margin-bottom:16px;text-align:center;">
+                🖼️ 图片预览<br><span style="font-size:14px;color:#888;">长按图片保存或分享</span>
+            </div>
+            <img src="${dataUrl}" style="max-width:100%;max-height:70vh;border-radius:12px;border:2px solid #6c5ce7;" />
+            <div style="color:#888;font-size:14px;margin-top:16px;text-align:center;">
+                图片已生成<br>请长按图片保存到相册后分享
+            </div>
+            <button onclick="this.parentElement.remove()" style="margin-top:20px;padding:12px 32px;background:#6c5ce7;color:#fff;border:none;border-radius:8px;font-size:16px;cursor:pointer;">
+                关闭
+            </button>
+        `;
+        document.body.appendChild(modal);
         
     } catch (e) {
         console.error('shareResult error:', e);
@@ -356,67 +365,111 @@ async function shareResult() {
     }
 }
 
-// Canvas 2D 备选绘制函数
+// Canvas 2D 绘制结果图片
 function drawResultToCanvas(name, result) {
     const canvas = document.createElement('canvas');
     canvas.width = 800;
-    canvas.height = 1000;
+    canvas.height = 1100;
     const ctx = canvas.getContext('2d');
     
-    // 背景
-    ctx.fillStyle = '#0a0a1a';
-    ctx.fillRect(0, 0, 800, 1000);
+    // 背景渐变
+    const grad = ctx.createLinearGradient(0, 0, 0, 1100);
+    grad.addColorStop(0, '#0a0a1a');
+    grad.addColorStop(1, '#12122a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 800, 1100);
+    
+    // 顶部装饰
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillRect(0, 0, 800, 6);
     
     // 标题
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px sans-serif';
+    ctx.font = 'bold 40px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('SBTI 2026 六维人格测试', 400, 60);
+    ctx.fillText('🧬 SBTI 2026 六维人格测试', 400, 70);
     
-    // 人格标签
-    ctx.font = 'bold 28px sans-serif';
+    // 分隔线
+    ctx.strokeStyle = '#6c5ce7';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(60, 100);
+    ctx.lineTo(740, 100);
+    ctx.stroke();
+    
+    // 人格emoji和大标签
+    ctx.font = '100px sans-serif';
+    ctx.fillText(result.primaryInfo.emoji, 400, 230);
+    
+    ctx.font = 'bold 32px sans-serif';
     ctx.fillStyle = '#6c5ce7';
-    ctx.fillText(`【${result.labelCn}】`, 400, 120);
+    ctx.fillText(`【${result.labelCn}】`, 400, 300);
     
-    // 分数
-    ctx.fillStyle = '#aaa';
     ctx.font = '20px sans-serif';
-    ctx.fillText(`六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)`, 400, 160);
+    ctx.fillStyle = '#888';
+    ctx.fillText(`[${result.labelEn}]`, 400, 340);
+    
+    ctx.fillStyle = '#aaa';
+    ctx.font = '22px sans-serif';
+    ctx.fillText(`${name} 的专属档案`, 400, 390);
+    
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = '#6c5ce7';
+    ctx.fillText(`主维度：${result.primaryInfo.emoji} ${result.primaryInfo.cn} (${result.primaryScore}/10)`, 400, 430);
     
     // 六维数据
     result.bars.forEach((bar, i) => {
-        const y = 220 + i * 50;
-        ctx.font = '18px sans-serif';
+        const y = 500 + i * 60;
+        ctx.font = '24px sans-serif';
         ctx.fillStyle = bar.color;
         ctx.textAlign = 'left';
-        ctx.fillText(`${bar.emoji} ${bar.cn}`, 60, y);
+        ctx.fillText(bar.emoji, 60, y);
+        ctx.font = '18px sans-serif';
+        ctx.fillStyle = '#bbb';
+        ctx.fillText(bar.cn, 110, y);
         ctx.textAlign = 'right';
         ctx.fillText(`${bar.val}/10`, 740, y);
         
+        // 进度条背景
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.beginPath();
+        ctx.roundRect(60, y - 15, 520, 24, 12);
+        ctx.fill();
         // 进度条
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(180, y - 18, 440, 24);
         ctx.fillStyle = bar.color;
-        ctx.fillRect(180, y - 18, bar.pct * 4.4, 24);
+        ctx.beginPath();
+        ctx.roundRect(60, y - 15, Math.max(bar.pct * 5.2, 8), 24, 12);
+        ctx.fill();
     });
     
-    // AI诊断
+    // 总分
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillStyle = '#e84393';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${result.madnessEmoji} 六维总分：${result.sixDimTotal}/60 (${result.percentScore}%)`, 400, 940);
+    
+    // AI诊断摘要
+    ctx.fillStyle = '#888';
+    ctx.font = '18px sans-serif';
+    ctx.fillText('🧠 AI诊断报告', 60, 990);
     ctx.fillStyle = '#eee';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'left';
-    const lines = result.aiReport.split('\n').slice(0, 8);
+    const lines = result.aiReport.split('\n').slice(0, 5);
     lines.forEach((line, i) => {
-        ctx.fillText(line.substring(0, 40), 60, 560 + i * 28);
+        if (line.trim()) {
+            ctx.fillText(line.substring(0, 45), 60, 1030 + i * 26);
+        }
     });
     
-    // 下载
-    const link = document.createElement('a');
-    link.download = `SBTI_${name}_2026.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-}
-
-// ── 更新 Bot 按钮 ───────────────────────────────
+    // 底部标签
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#555';
+    ctx.textAlign = 'center';
+    ctx.fillText('#SBTI2026 #六维人格测试', 400, 1080);
+    
+    return canvas.toDataURL('image/png');
+}// ── 更新 Bot 按钮 ───────────────────────────────
 function updateBotButton() {
     if (tg && tg.MainButton) {
         tg.MainButton.setText('返回玄学大师Bot');
