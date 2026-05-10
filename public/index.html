@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>🧬 SBTI 2026 疯狂指数个性测试</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // 立即隐藏 Telegram 加载界面
+        if (window.Telegram?.WebApp) {
+            window.Telegram.WebApp.ready();
+        }
+    </script>
+    <style>
+        /* 立即隐藏 Telegram 加载界面 */
+        tg-splash-screen, 
+        .twa-splash-screen,
+        div[class*="splash"] {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        body {
+            visibility: visible !important;
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>

@@ -14,6 +14,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tg) {
         tg.ready();
         user = tg.initDataUnsafe?.user;
+        
+        // 隐藏 Telegram 原生加载界面
+        const hideSplash = () => {
+            const splash = document.querySelector('tg-splash-screen');
+            if (splash) {
+                splash.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important;';
+            }
+            document.querySelectorAll('[class*="splash"], [id*="splash"]').forEach(el => {
+                el.style.cssText = 'display: none !important; visibility: hidden !important;';
+            });
+        };
+        hideSplash();
+        setTimeout(hideSplash, 100);
+        setTimeout(hideSplash, 500);
+        
+        document.body.style.visibility = 'visible';
+    } else {
+        document.body.style.visibility = 'visible';
     }
 
     // 闪屏延迟
