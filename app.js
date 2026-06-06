@@ -317,7 +317,7 @@ function exportResultImage() {
     ctx.fillStyle = '#6c5ce7';
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('#2026SBTI 个性测试  请到TG @EasternMysteryBot', 400, 1140);
+    ctx.fillText('#2026SBTI 个性测试  请到TG @XuanxuedashiBOT', 400, 1140);
     ctx.fillStyle = '#444';
     ctx.font = '14px sans-serif';
     ctx.fillText('Powered by 玄学大师 × SBTI 2026', 400, 1170);
@@ -541,7 +541,7 @@ function updateBotButton() {
     if (tg && tg.MainButton) {
         tg.MainButton.setText('返回玄学大师Bot');
         tg.MainButton.onClick(() => {
-            window.location.href = `https://t.me/${tg.initDataUnsafe?.bot?.username || 'EasternMysteryBot'}`;
+            window.location.href = `https://t.me/${tg.initDataUnsafe?.bot?.username || 'XuanxuedashiBOT'}`;
         });
         tg.MainButton.show();
     }
