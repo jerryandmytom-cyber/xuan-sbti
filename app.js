@@ -397,7 +397,7 @@ ${result.madnessEmoji} ${result.madnessLevel}
 🧠 AI诊断报告
 ${result.aiReport.split('\n').slice(0,3).join('\n')}
 
-@EasternMysteryBot 👈快来试试`;
+@XuanxuedashiBOT 👈快来试试`;
 
         if (tg) {
             const encodedText = encodeURIComponent(shareText);
