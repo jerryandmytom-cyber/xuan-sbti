@@ -2810,8 +2810,8 @@ def sbti_start_test(uid: str, name: str, chat_id: str) -> tuple:
 
 
 # ============ UI ============
-def main_menu():
-    kb = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+def main_menu(selective=False):
+    kb = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, selective=selective)
     kb.add("🔮 八字算命", "💕 姻缘测算")
     kb.add("✨ 紫微斗数", "🌤️ 今日运势")
     kb.add("🕐 吉时查询", "🍼 取名能手")
@@ -2860,6 +2860,31 @@ def sbti_user_key(msg) -> str:
     return state_user_key(msg)
 
 
+def per_user_keyboard(row_width=2, one_time_keyboard=True):
+    """群聊中只给触发用户显示的键盘，避免影响其他用户。"""
+    return ReplyKeyboardMarkup(
+        row_width=row_width,
+        resize_keyboard=True,
+        one_time_keyboard=one_time_keyboard,
+        selective=True,
+    )
+
+
+def reply_user(msg, text, **kwargs):
+    """群聊中回复到触发用户消息，确保提示/结果对应到本人。"""
+    chat_type = getattr(msg.chat, 'type', '')
+    if chat_type in ('group', 'supergroup') and 'reply_to_message_id' not in kwargs:
+        kwargs['reply_to_message_id'] = msg.message_id
+    return tb.send_message(msg.chat.id, text, **kwargs)
+
+
+def clear_user_state(msg):
+    """只清理当前用户自己的流程状态，不影响群里其他用户。"""
+    uid = state_user_key(msg)
+    for store in (user_service, date_type_wait, bazi_context, yinyuan_context, qiming_context, sbti_context):
+        store.pop(uid, None)
+
+
 # ============ 消息处理 ============
 @tb.message_handler(commands=['start'])
 def start_cmd(msg):
@@ -2867,97 +2892,101 @@ def start_cmd(msg):
     user_service.pop(uid, None)
     for store in (date_type_wait, bazi_context, yinyuan_context, qiming_context, sbti_context):
         store.pop(uid, None)
-    tb.send_message(msg.chat.id,
+    reply_user(msg,
         "🏛️ *欢迎来到玄学大师*\n\n智能命理分析系统\n\n请选择服务：",
-        reply_markup=main_menu(), parse_mode='Markdown')
+        reply_markup=main_menu(selective=True), parse_mode='Markdown')
 
 # ── 命令别名：让 BotCommand 菜单里的 /bazi /yinyuan 等也能触发对应功能 ──
 @tb.message_handler(commands=['bazi'])
 def bazi_slash_cmd(msg):
     user_service[state_user_key(msg)] = "bazi"
-    tb.send_message(msg.chat.id, "🔮 *八字算命*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "🔮 *八字算命*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(commands=['yinyuan'])
 def yinyuan_slash_cmd(msg):
     user_service[state_user_key(msg)] = "yinyuan"
-    tb.send_message(msg.chat.id, "💕 *姻缘测算*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "💕 *姻缘测算*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(commands=['ziwei'])
 def ziwei_slash_cmd(msg):
     user_service[state_user_key(msg)] = "ziwei"
-    tb.send_message(msg.chat.id, "✨ *紫微斗数*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "✨ *紫微斗数*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(commands=['today'])
 def today_slash_cmd(msg):
+    clear_user_state(msg)
     try:
         result = generate_today_fortune_direct()
-        tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+        reply_user(msg, result, parse_mode='Markdown')
     except Exception as e:
         logger.exception(f"今日运势出错: {e}")
-        tb.send_message(msg.chat.id, "⚠️ 获取运势时出错，请稍后重试。")
+        reply_user(msg, "⚠️ 获取运势时出错，请稍后重试。")
 
 @tb.message_handler(commands=['jishi'])
 def jishi_slash_cmd(msg):
+    clear_user_state(msg)
     try:
         result = generate_jishi_today()
-        tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+        reply_user(msg, result, parse_mode='Markdown')
     except Exception as e:
         logger.exception(f"吉时查询出错: {e}")
-        tb.send_message(msg.chat.id, "⚠️ 查询吉时时出错，请稍后重试。")
+        reply_user(msg, "⚠️ 查询吉时时出错，请稍后重试。")
 
 @tb.message_handler(commands=['qiming'])
 def qiming_slash_cmd(msg):
     user_service[state_user_key(msg)] = "qiming"
-    tb.send_message(msg.chat.id, "🍼 *取名能手*\n\n请输入：出生年月日时 性别\n例：2020年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "🍼 *取名能手*\n\n请输入：出生年月日时 性别\n例：2020年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(commands=['help'])
 def help_slash_cmd(msg):
-    tb.send_message(msg.chat.id, HELP_TEXT)
+    reply_user(msg, HELP_TEXT)
 
 @tb.message_handler(func=lambda m: m.text == "🔮 八字算命")
 def bazi_cmd(msg):
     user_service[state_user_key(msg)] = "bazi"
-    tb.send_message(msg.chat.id, "🔮 *八字算命*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "🔮 *八字算命*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(func=lambda m: m.text == "💕 姻缘测算")
 def yinyuan_cmd(msg):
     user_service[state_user_key(msg)] = "yinyuan"
-    tb.send_message(msg.chat.id, "💕 *姻缘测算*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "💕 *姻缘测算*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(func=lambda m: m.text == "✨ 紫微斗数")
 def ziwei_cmd(msg):
     user_service[state_user_key(msg)] = "ziwei"
-    tb.send_message(msg.chat.id, "✨ *紫微斗数*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "✨ *紫微斗数*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(func=lambda m: m.text == "🌤️ 今日运势")
 def today_cmd(msg):
     # 直接输出今日运势，无需输入生辰
+    clear_user_state(msg)
     try:
         result = generate_today_fortune_direct()
-        tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+        reply_user(msg, result, parse_mode='Markdown')
     except Exception as e:
         logger.exception(f"今日运势出错: {e}")
-        tb.send_message(msg.chat.id, "⚠️ 获取运势时出错，请稍后重试。")
+        reply_user(msg, "⚠️ 获取运势时出错，请稍后重试。")
 
 @tb.message_handler(func=lambda m: m.text == "🕐 吉时查询")
 def jishi_cmd(msg):
     # 直接输出今日吉时，无需输入生辰
+    clear_user_state(msg)
     try:
         result = generate_jishi_today()
-        tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+        reply_user(msg, result, parse_mode='Markdown')
     except Exception as e:
         logger.exception(f"吉时查询出错: {e}")
-        tb.send_message(msg.chat.id, "⚠️ 查询吉时时出错，请稍后重试。")
+        reply_user(msg, "⚠️ 查询吉时时出错，请稍后重试。")
 
 @tb.message_handler(func=lambda m: m.text == "🍼 取名能手")
 def qiming_cmd(msg):
     user_service[state_user_key(msg)] = "qiming"
-    tb.send_message(msg.chat.id, "🍼 *取名能手*\n\n请输入：出生年月日时 性别\n例：2020年5月15日 10:00 男", parse_mode='Markdown')
+    reply_user(msg, "🍼 *取名能手*\n\n请输入：出生年月日时 性别\n例：2020年5月15日 10:00 男", parse_mode='Markdown')
 
 @tb.message_handler(func=lambda m: m.text == "📚 帮助")
 def help_cmd(msg):
     # HELP_TEXT 含 /sbti_group 等下划线字符，改为纯文本发送彻底避免 Markdown 解析错误
-    tb.send_message(msg.chat.id, HELP_TEXT)
+    reply_user(msg, HELP_TEXT)
 
 @tb.message_handler(commands=['sbti'])
 def sbti_cmd(msg):
@@ -2977,13 +3006,13 @@ def sbti_cmd(msg):
         "✨ /ziwei — 紫微斗数\n\n"
         "现在开始第一题 👇"
     )
-    tb.send_message(msg.chat.id, intro, parse_mode='Markdown')
+    reply_user(msg, intro, parse_mode='Markdown')
     first_q_text, options = sbti_start_test(uid, name, chat_id)
 
-    kb = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
+    kb = per_user_keyboard(row_width=2, one_time_keyboard=True)
     for i, opt in enumerate(options, 1):
         kb.add(f"{i}. {opt[:40]}")
-    tb.send_message(msg.chat.id, first_q_text, parse_mode='Markdown', reply_markup=kb)
+    reply_user(msg, first_q_text, parse_mode='Markdown', reply_markup=kb)
 
 @tb.message_handler(func=lambda m: m.text == "🧬 SBTI测试")
 def sbti_menu_cmd(msg):
@@ -2996,7 +3025,7 @@ def sbti_group_cmd(msg):
     chat_id = str(msg.chat.id)
     chat_title = getattr(msg.chat, 'title', None) or "本群"
     result = sbti_build_group_chart(chat_id, chat_title)
-    tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+    reply_user(msg, result, parse_mode='Markdown')
 
 @tb.message_handler(func=lambda m: True)
 def handle(msg):
@@ -3023,20 +3052,20 @@ def handle(msg):
             except Exception as e:
                 logger.exception(f"SBTI处理答案失败: {e}")
                 sbti_context.pop(sbti_uid, None)
-                tb.send_message(msg.chat.id, "⚠️ 生成SBTI分析结果时出错，请发送 /sbti 重新测试。", reply_markup=main_menu())
+                reply_user(msg, "⚠️ 生成SBTI分析结果时出错，请发送 /sbti 重新测试。", reply_markup=main_menu(selective=True))
                 return
             if done:
                 # 结果卡含 ╔╗║ 等特殊字符及 [] () 括号，用纯文本避免 Markdown 解析失败
-                tb.send_message(msg.chat.id, response,
-                                reply_markup=main_menu())
+                reply_user(msg, response,
+                                reply_markup=main_menu(selective=True))
             else:
                 if next_opts:
-                    kb = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
+                    kb = per_user_keyboard(row_width=2, one_time_keyboard=True)
                     for i, opt in enumerate(next_opts, 1):
                         kb.add(f"{i}. {opt[:40]}")
-                    tb.send_message(msg.chat.id, response, parse_mode='Markdown', reply_markup=kb)
+                    reply_user(msg, response, parse_mode='Markdown', reply_markup=kb)
                 else:
-                    tb.send_message(msg.chat.id, response, parse_mode='Markdown')
+                    reply_user(msg, response, parse_mode='Markdown')
         else:
             # 用户输入非数字时提示
             ctx = sbti_context.get(sbti_uid, {})
@@ -3044,10 +3073,10 @@ def handle(msg):
             if current_step < len(ctx.get('questions', [])):
                 q = ctx['questions'][current_step]
                 opts = [o['text'] for o in q.get('options', [])]
-                kb = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True, one_time_keyboard=True)
+                kb = per_user_keyboard(row_width=2, one_time_keyboard=True)
                 for i, opt in enumerate(opts, 1):
                     kb.add(f"{i}. {opt[:40]}")
-                tb.send_message(msg.chat.id,
+                reply_user(msg,
                     f"请回复数字 1-{len(opts)} 选择答案哦～",
                     reply_markup=kb)
         return
@@ -3057,7 +3086,7 @@ def handle(msg):
         if   any(w in text for w in ['阳历','公历','新历']): date_type = '阳历'
         elif any(w in text for w in ['阴历','农历','旧历']): date_type = '阴历'
         else:
-            tb.send_message(msg.chat.id, "请回复「阳历」或「阴历」")
+            reply_user(msg, "请回复「阳历」或「阴历」")
             return
 
         ctx = date_type_wait.pop(uid)
@@ -3077,35 +3106,35 @@ def handle(msg):
         try:
             if   svc == "bazi":
                 result, _ = generate_bazi_detail(name, birth_info, gender, date_type, lunar_date)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
                 bazi_context[uid] = _stamp({'name':name,'birth_info':birth_info,'gender':gender,
                                             'date_type':date_type,'lunar_date':lunar_date})
             elif svc == "yinyuan":
                 result = generate_yinyuan_detail(name, birth_info, gender)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
                 yinyuan_context[uid] = _stamp({'name':name,'birth_info':birth_info,'gender':gender})
             elif svc == "ziwei":
                 result = generate_ziwei_detail(name, birth_info, gender, date_type, original_input)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
             elif svc == "today":
                 result = generate_today_fortune(name, birth_info, gender)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
             elif svc == "qiming":
                 result = generate_qiming_detail(name, birth_info, gender)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
                 qiming_context[uid] = _stamp({'name':name,'birth_info':birth_info,'gender':gender})
             elif svc == "liunian":
                 result = generate_liunian_dayun(name, birth_info, gender, lunar_date)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
                 # 保留基础上下文，便于后续再次触发流年/大运时直接复用
                 bazi_context[uid] = _stamp({'name':name,'birth_info':birth_info,'gender':gender,
                                             'date_type':date_type,'lunar_date':lunar_date})
             elif svc == "jishi":
                 result = generate_jishi_detail(birth_info, gender)
-                tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                reply_user(msg, result, parse_mode='Markdown')
         except Exception as e:
             logger.exception(f"生成分析时出错: {e}")
-            tb.send_message(msg.chat.id, "⚠️ 分析时发生错误，请检查输入格式后重试。")
+            reply_user(msg, "⚠️ 分析时发生错误，请检查输入格式后重试。")
 
         user_service.pop(uid, None)
         return
@@ -3121,15 +3150,15 @@ def handle(msg):
                 ctx.get('gender', '男'),
                 ctx.get('lunar_date', '')
             )
-            tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+            reply_user(msg, result, parse_mode='Markdown')
             return
         user_service[uid] = "liunian"
-        tb.send_message(msg.chat.id, "📈 *流年大运分析*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
+        reply_user(msg, "📈 *流年大运分析*\n\n请输入：姓名 出生年月日时 性别\n例：张三 1990年5月15日 10:00 男", parse_mode='Markdown')
         return
     if text in ["合婚分析", "合婚", "合八字"]:
         user_service[uid] = "hehun"
         yinyuan_context[uid] = _stamp({'waiting_hehun': True})
-        tb.send_message(msg.chat.id, "💑 *合婚分析*\n\n请输入双方 姓名 出生年月日时 性别，例如：\n张三 1996年5月15日 10:00 男\n李丽 2000年8月26日 18:00 女", parse_mode='Markdown')
+        reply_user(msg, "💑 *合婚分析*\n\n请输入双方 姓名 出生年月日时 性别，例如：\n张三 1996年5月15日 10:00 男\n李丽 2000年8月26日 18:00 女", parse_mode='Markdown')
         return
 
     # ── 合婚：输入双方生辰 ───────────────────────────
@@ -3147,11 +3176,11 @@ def handle(msg):
                     male_info = b1 if g1 == '男' else b2
                     female_info = b2 if g2 == '女' else b1
                     result = generate_hehun_detail(male_info, female_info)
-                    tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+                    reply_user(msg, result, parse_mode='Markdown')
                     yinyuan_context.pop(uid, None)
                     user_service.pop(uid, None)
                     return
-        tb.send_message(msg.chat.id, "请按格式输入双方信息：\n张三 1996年5月15日 10:00 男\n李丽 2000年8月26日 18:00 女\n（必须一男一女）")
+        reply_user(msg, "请按格式输入双方信息：\n张三 1996年5月15日 10:00 男\n李丽 2000年8月26日 18:00 女\n（必须一男一女）")
         return
 
     # ── 取名：输入姓氏 ───────────────────────────────
@@ -3160,7 +3189,7 @@ def handle(msg):
         if re.fullmatch(r'[\u4e00-\u9fff]{1,4}', text):
             ctx = qiming_context.pop(uid)
             result = generate_qiming_with_surname(ctx['name'], ctx['birth_info'], ctx['gender'], text)
-            tb.send_message(msg.chat.id, result, parse_mode='Markdown')
+            reply_user(msg, result, parse_mode='Markdown')
             return
 
     # ── 关键词全局检测（VIP版：改为直接引导功能）──────────
@@ -3170,14 +3199,14 @@ def handle(msg):
         if paid_key:
             service_map = {'liunian': 'liunian', 'hehun': 'yinyuan', 'qiming': 'qiming', 'ziwei': 'ziwei'}
             user_service[uid] = service_map.get(paid_key, 'bazi')
-            tb.send_message(msg.chat.id, "✅ 已为您开启对应功能，请输入：姓名 出生年月日时 性别", parse_mode='Markdown')
+            reply_user(msg, "✅ 已为您开启对应功能，请输入：姓名 出生年月日时 性别", parse_mode='Markdown')
             return
 
     # ── 正常生辰输入流程 ─────────────────────────────
     birth_info = parse_date_flexible(text)
     if not birth_info:
         if svc:
-            tb.send_message(msg.chat.id, "⚠️ 未能识别生辰信息，请按格式输入：\n1990年5月15日 10:00 男")
+            reply_user(msg, "⚠️ 未能识别生辰信息，请按格式输入：\n1990年5月15日 10:00 男")
         return
 
     gender = parse_gender(text)
@@ -3193,7 +3222,7 @@ def handle(msg):
         'name': name, 'gender': gender,
         'svc': svc or 'bazi'
     })
-    tb.send_message(msg.chat.id,
+    reply_user(msg,
         f"📅 *日期类型确认*\n\n您输入的是「阳历」还是「阴历」？\n请回复：阳历 或 阴历\n\n"
         f"原始输入：{birth_info['year']}年{birth_info['month']}月{birth_info['day']}日 {birth_info['hour']:02d}:00",
         parse_mode='Markdown')
