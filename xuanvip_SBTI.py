@@ -2841,13 +2841,22 @@ HELP_TEXT = """📚 玄学大师使用帮助
 MENU_ITEMS = {"🔮 八字算命","💕 姻缘测算","✨ 紫微斗数","🌤️ 今日运势",
               "🕐 吉时查询","🍼 取名能手","🧬 SBTI测试","📚 帮助"}
 
+
+def sbti_user_key(msg) -> str:
+    """SBTI 会话按 chat_id + user_id 隔离，避免群聊里多人答题串号。"""
+    user_id = msg.from_user.id if msg.from_user else msg.chat.id
+    return f"{msg.chat.id}:{user_id}"
+
+
 # ============ 消息处理 ============
 @tb.message_handler(commands=['start'])
 def start_cmd(msg):
     uid = str(msg.chat.id)
+    sbti_uid = sbti_user_key(msg)
     user_service.pop(uid, None)
-    for store in (date_type_wait, bazi_context, yinyuan_context, qiming_context, sbti_context):
+    for store in (date_type_wait, bazi_context, yinyuan_context, qiming_context):
         store.pop(uid, None)
+    sbti_context.pop(sbti_uid, None)
     tb.send_message(msg.chat.id,
         "🏛️ *欢迎来到玄学大师*\n\n智能命理分析系统\n\n请选择服务：",
         reply_markup=main_menu(), parse_mode='Markdown')
@@ -2943,7 +2952,7 @@ def help_cmd(msg):
 @tb.message_handler(commands=['sbti'])
 def sbti_cmd(msg):
     """开始 SBTI 发疯指数测试"""
-    uid = str(msg.chat.id)
+    uid = sbti_user_key(msg)
     chat_id = str(msg.chat.id)
     # 安全获取用户名（频道消息 from_user 可能为 None）
     name = (msg.from_user.first_name if msg.from_user else None) or "测试者"
@@ -2982,6 +2991,7 @@ def sbti_group_cmd(msg):
 @tb.message_handler(func=lambda m: True)
 def handle(msg):
     uid  = str(msg.chat.id)
+    sbti_uid = sbti_user_key(msg)
     text = msg.text.strip() if msg.text else ''
     if not text: return
 
@@ -2993,12 +3003,12 @@ def handle(msg):
         return
 
     # ── SBTI 测试进行中：处理答案 ─────────────────────
-    if uid in sbti_context:
+    if sbti_uid in sbti_context:
         # 支持数字答案 "1" / "1. xxx" 两种格式
         num_match = re.match(r'^(\d+)[.\s]?', text)
         if num_match:
             answer_idx = int(num_match.group(1)) - 1
-            done, response, next_opts = sbti_process_answer(uid, answer_idx)
+            done, response, next_opts = sbti_process_answer(sbti_uid, answer_idx)
             if done:
                 # 结果卡含 ╔╗║ 等特殊字符及 [] () 括号，用纯文本避免 Markdown 解析失败
                 tb.send_message(msg.chat.id, response,
@@ -3013,7 +3023,7 @@ def handle(msg):
                     tb.send_message(msg.chat.id, response, parse_mode='Markdown')
         else:
             # 用户输入非数字时提示
-            ctx = sbti_context.get(uid, {})
+            ctx = sbti_context.get(sbti_uid, {})
             current_step = ctx.get('step', 0)
             if current_step < len(ctx.get('questions', [])):
                 q = ctx['questions'][current_step]
