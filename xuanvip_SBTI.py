@@ -2431,6 +2431,14 @@ def sbti_build_personality_label(primary: str, primary_score: int, secondary: st
     primary_desc = score_to_desc(primary_info['cn'], primary_score)
     secondary_desc = score_to_desc(secondary_info['cn'], secondary_score)
     total = primary_score + secondary_score
+    intensity_pct_map = {
+        '极高': 90,
+        '较高': 70,
+        '中等': 50,
+        '轻微': 30,
+        '极低': 10,
+    }
+    intensity_pct = intensity_pct_map.get(intensity, 50)
     
     ai_report = f"""📊 分数推导诊断：
 
@@ -2438,7 +2446,7 @@ def sbti_build_personality_label(primary: str, primary_score: int, secondary: st
 
 • 主特征：{primary_desc}
 • 次特征：{secondary_desc}
-• 双维总分：{total}分 / 20分（{int(intensity.replace('极','').replace('较','').replace('中','').replace('轻',''))*10}%强度）
+• 双维总分：{total}分 / 20分（{intensity_pct}%强度）
 
 🧠 AI 分析：
 
@@ -3008,7 +3016,13 @@ def handle(msg):
         num_match = re.match(r'^(\d+)[.\s]?', text)
         if num_match:
             answer_idx = int(num_match.group(1)) - 1
-            done, response, next_opts = sbti_process_answer(sbti_uid, answer_idx)
+            try:
+                done, response, next_opts = sbti_process_answer(sbti_uid, answer_idx)
+            except Exception as e:
+                logger.exception(f"SBTI处理答案失败: {e}")
+                sbti_context.pop(sbti_uid, None)
+                tb.send_message(msg.chat.id, "⚠️ 生成SBTI分析结果时出错，请发送 /sbti 重新测试。", reply_markup=main_menu())
+                return
             if done:
                 # 结果卡含 ╔╗║ 等特殊字符及 [] () 括号，用纯文本避免 Markdown 解析失败
                 tb.send_message(msg.chat.id, response,
